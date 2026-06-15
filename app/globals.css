@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* Dark mode driven by a class on <html> (toggled in Settings / system). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Brand — warm amber/honey */
+  --color-brand-50: #fff8eb;
+  --color-brand-100: #fdedc8;
+  --color-brand-200: #fbd98c;
+  --color-brand-300: #f9c451;
+  --color-brand-400: #f6ab2b;
+  --color-brand-500: #ed8c0f;
+  --color-brand-600: #d2700a;
+  --color-brand-700: #ad520d;
+  --color-brand-800: #8c4112;
+  --color-brand-900: #733612;
+}
+
+/* Semantic surface tokens, themed for light/dark. */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f2f2ef;
+  --border: #e6e6e1;
+  --text: #1c1c1a;
+  --text-muted: #6b6b66;
+  --ring: #ed8c0f;
+}
+
+.dark {
+  --bg: #0c0d0c;
+  --surface: #16181a;
+  --surface-2: #1d2022;
+  --border: #2a2e30;
+  --text: #e9eae8;
+  --text-muted: #9aa0a0;
+  --ring: #f6ab2b;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reusable component classes */
+@layer components {
+  .card {
+    @apply rounded-2xl border bg-surface shadow-sm;
+    border-color: var(--border);
+  }
+  .btn,
+  .btn-primary,
+  .btn-ghost,
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2
+           text-sm font-medium transition-colors disabled:opacity-50
+           disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-ghost {
+    @apply text-text hover:bg-surface-2;
+  }
+  .btn-outline {
+    @apply border bg-surface hover:bg-surface-2;
+  }
+  .input {
+    @apply w-full rounded-xl border bg-surface px-3 py-2 text-sm text-text
+           placeholder:text-text-muted/70 outline-none
+           focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-text-muted;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs
+           font-medium ring-1 ring-inset;
+  }
+}
+
+/* Thin, unobtrusive scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
