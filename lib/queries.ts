@@ -15,7 +15,9 @@ import type {
   Location,
   RefData,
   Store,
+  Subscription,
 } from "@/lib/types";
+import { advancePayment } from "@/lib/subscriptions";
 
 // ---------------------------------------------------------------------------
 // Household resolution — every query is scoped to the signed-in user's
@@ -182,7 +184,9 @@ export function useAddStock() {
       if (!householdId) throw new Error("No household");
       const { data: auth } = await sb.auth.getUser();
 
-      // Reuse an existing catalog item by barcode or (name+brand), else make one.
+      // Reuse an existing catalog item so repurchases become new *lots* of the
+      // same product (not duplicates): match by barcode first, then by name
+      // within the same domain.
       let itemId: string | null = null;
       if (input.barcode) {
         const { data: existing } = await sb
@@ -192,6 +196,18 @@ export function useAddStock() {
           .eq("barcode", input.barcode)
           .maybeSingle();
         itemId = existing?.id ?? null;
+      }
+      if (!itemId) {
+        let nameQ = sb
+          .from("items")
+          .select("id")
+          .eq("household_id", householdId)
+          .ilike("name", input.name.trim());
+        nameQ = input.domainId
+          ? nameQ.eq("domain_id", input.domainId)
+          : nameQ.is("domain_id", null);
+        const { data: byName } = await nameQ.limit(1).maybeSingle();
+        itemId = byName?.id ?? null;
       }
       if (!itemId) {
         const { data: item, error: itemErr } = await sb
@@ -457,5 +473,81 @@ export function useTrendsData() {
       if (error) throw error;
       return (data ?? []) as InventoryDetail[];
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Subscriptions (recurring payments)
+// ---------------------------------------------------------------------------
+export function useSubscriptions() {
+  const { data: householdId } = useHouseholdId();
+  return useQuery({
+    queryKey: ["subscriptions", householdId],
+    enabled: !!householdId,
+    queryFn: async (): Promise<Subscription[]> => {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb
+        .from("subscriptions")
+        .select("*")
+        .eq("household_id", householdId!)
+        .order("next_payment", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return (data ?? []) as Subscription[];
+    },
+  });
+}
+
+export type SubscriptionInput = Omit<
+  Subscription,
+  "id" | "household_id" | "created_at" | "updated_at"
+> & { id?: string };
+
+export function useUpsertSubscription() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async (input: SubscriptionInput) => {
+      const sb = supabaseBrowser();
+      const { id, ...fields } = input;
+      if (id) {
+        const { error } = await sb.from("subscriptions").update(fields).eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb
+          .from("subscriptions")
+          .insert({ household_id: householdId, ...fields });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
+  });
+}
+
+export function useDeleteSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("subscriptions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
+  });
+}
+
+// Record a payment: advance next_payment by one billing cycle.
+export function useMarkSubscriptionPaid() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (sub: Subscription) => {
+      const sb = supabaseBrowser();
+      const next = advancePayment(sub);
+      const { error } = await sb
+        .from("subscriptions")
+        .update({ next_payment: next })
+        .eq("id", sub.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
   });
 }

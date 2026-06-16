@@ -87,6 +87,33 @@ export interface InventoryDetail {
   days_to_expiry: number | null;
 }
 
+export type BillingCycle =
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly"
+  | "custom";
+
+export type SubscriptionStatus = "active" | "paused" | "cancelled";
+
+export interface Subscription {
+  id: string;
+  household_id: string;
+  name: string;
+  category: string | null;
+  price: number;
+  currency: string;
+  billing_cycle: BillingCycle;
+  cycle_days: number | null;
+  next_payment: string | null;
+  start_date: string | null;
+  payment_method: string | null;
+  status: SubscriptionStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Reference data bundled together for forms/filters.
 export interface RefData {
   household: Household;

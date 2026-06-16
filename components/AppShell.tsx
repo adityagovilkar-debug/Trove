@@ -9,6 +9,7 @@ import {
   LineChart,
   Settings,
   LogOut,
+  CreditCard,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -18,10 +19,14 @@ import { CheckHaveSearch } from "./CheckHaveSearch";
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/inventory", label: "Inventory", icon: Boxes },
+  { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/add", label: "Add Stock", icon: PlusCircle },
   { href: "/trends", label: "Trends", icon: LineChart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
+
+// Mobile bottom bar omits "Add" (reachable via the + buttons) to stay uncrowded.
+const MOBILE_NAV = NAV.filter((n) => n.href !== "/add");
 
 export function AppShell({
   email,
@@ -112,7 +117,7 @@ export function AppShell({
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-surface md:hidden">
-        {NAV.map(({ href, label, icon: Icon, exact }) => (
+        {MOBILE_NAV.map(({ href, label, icon: Icon, exact }) => (
           <Link
             key={href}
             href={href}

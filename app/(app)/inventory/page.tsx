@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PlusCircle, Search } from "lucide-react";
 import { useInventory, useRefData } from "@/lib/queries";
 import { StockCard } from "@/components/StockCard";
+import { InventoryTable } from "@/components/InventoryTable";
 import { cn } from "@/lib/utils";
 import type { InventoryStatus } from "@/lib/types";
 
@@ -105,9 +106,13 @@ function InventoryInner() {
         <div className="card p-10 text-center text-sm text-text-muted">
           Nothing here. {status === "active" && "Add some stock to get started."}
         </div>
+      ) : status === "active" ? (
+        // Active stock: product-grouped table (sum lots, expand to purchases).
+        <InventoryTable rows={visible} />
       ) : (
+        // History (finished/expired/all): flat list of individual entries.
         <>
-          <p className="text-xs text-text-muted">{visible.length} item(s)</p>
+          <p className="text-xs text-text-muted">{visible.length} entries</p>
           <div className="space-y-2">
             {visible.map((r) => (
               <StockCard key={r.id} row={r} />
