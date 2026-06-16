@@ -77,13 +77,10 @@ export function AttributeFields({
             <span className="text-xs">▾</span>
           </summary>
           {g === NUTRITION && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3">
               <ScanLabelButton
                 onResult={(parsed) => onChange({ ...values, ...parsed })}
               />
-              <span className="text-xs text-text-muted">
-                Photograph the label to auto-fill
-              </span>
             </div>
           )}
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
