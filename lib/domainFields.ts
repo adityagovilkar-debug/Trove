@@ -3,7 +3,12 @@
 // Values are stored in items.attributes (JSONB), so adding a new domain or
 // field here needs NO database migration — this is the extensibility layer.
 
-export type FieldType = "text" | "number" | "date" | "select";
+export type FieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "select"
+  | "classification"; // structured Book classification (Genre/Dewey/custom)
 
 export interface FieldDef {
   key: string;
@@ -13,10 +18,29 @@ export interface FieldDef {
   placeholder?: string;
   // Show this attribute inline on the stock card (keep it to 1–2 per domain).
   prominent?: boolean;
+  // Fields sharing a group render together inside a collapsible section,
+  // so optional detail (e.g. nutrition) stays out of the way until needed.
+  group?: string;
 }
+
+export const NUTRITION = "Nutrition facts (per serving)";
 
 // Keyed by domain.key (see the `domains` table seed).
 export const DOMAIN_FIELDS: Record<string, FieldDef[]> = {
+  // Groceries: nutrition is optional and only relevant for packaged foods,
+  // beverages and snacks — so it lives in a collapsible group.
+  grocery: [
+    { key: "serving_size", label: "Serving size", type: "text", placeholder: "e.g. 330 ml, 30 g", group: NUTRITION },
+    { key: "servings_per_pack", label: "Servings / pack", type: "number", group: NUTRITION },
+    { key: "calories", label: "Calories (kcal)", type: "number", group: NUTRITION },
+    { key: "protein_g", label: "Protein (g)", type: "number", group: NUTRITION },
+    { key: "carbs_g", label: "Carbs (g)", type: "number", group: NUTRITION },
+    { key: "sugar_g", label: "of which sugar (g)", type: "number", group: NUTRITION },
+    { key: "fat_g", label: "Fat (g)", type: "number", group: NUTRITION },
+    { key: "sat_fat_g", label: "of which saturated (g)", type: "number", group: NUTRITION },
+    { key: "fiber_g", label: "Fibre (g)", type: "number", group: NUTRITION },
+    { key: "sodium_mg", label: "Sodium (mg)", type: "number", group: NUTRITION },
+  ],
   electronics: [
     { key: "model", label: "Model", type: "text", placeholder: "e.g. WH-1000XM5", prominent: true },
     { key: "serial", label: "Serial number", type: "text" },
@@ -40,8 +64,7 @@ export const DOMAIN_FIELDS: Record<string, FieldDef[]> = {
     {
       key: "classification",
       label: "Shelf / Classification",
-      type: "text",
-      placeholder: "e.g. Sci-Fi, or a Dewey/LoC code",
+      type: "classification",
       prominent: true,
     },
     {
