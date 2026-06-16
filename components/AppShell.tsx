@@ -10,19 +10,23 @@ import {
   Settings,
   LogOut,
   CreditCard,
+  CalendarClock,
+  Command,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import { CheckHaveSearch } from "./CheckHaveSearch";
+import { CommandPalette } from "./CommandPalette";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/inventory", label: "Inventory", icon: Boxes },
-  { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
-  { href: "/add", label: "Add Stock", icon: PlusCircle },
-  { href: "/trends", label: "Trends", icon: LineChart },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true },
+  { href: "/upcoming", label: "Upcoming", short: "Soon", icon: CalendarClock },
+  { href: "/inventory", label: "Inventory", short: "Stock", icon: Boxes },
+  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard },
+  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle },
+  { href: "/trends", label: "Trends", short: "Trends", icon: LineChart },
+  { href: "/settings", label: "Settings", short: "Settings", icon: Settings },
 ];
 
 // Mobile bottom bar omits "Add" (reachable via the + buttons) to stay uncrowded.
@@ -107,6 +111,15 @@ export function AppShell({
           <div className="flex-1">
             <CheckHaveSearch />
           </div>
+          <button
+            onClick={() => window.dispatchEvent(new Event("trove:command"))}
+            className="btn-ghost shrink-0 px-2 py-2"
+            title="Command palette (⌘K)"
+            aria-label="Open command palette"
+          >
+            <Command className="h-[18px] w-[18px]" />
+            <kbd className="hidden text-[11px] text-text-muted lg:inline">⌘K</kbd>
+          </button>
           <div className="md:hidden">
             <ThemeToggle />
           </div>
@@ -117,20 +130,22 @@ export function AppShell({
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-surface md:hidden">
-        {MOBILE_NAV.map(({ href, label, icon: Icon, exact }) => (
+        {MOBILE_NAV.map(({ href, short, icon: Icon, exact }) => (
           <Link
             key={href}
             href={href}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-medium",
+              "flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium",
               isActive(href, exact) ? "text-brand-600" : "text-text-muted",
             )}
           >
             <Icon className="h-5 w-5" />
-            {label.split(" ")[0]}
+            {short}
           </Link>
         ))}
       </nav>
+
+      <CommandPalette />
     </div>
   );
 }

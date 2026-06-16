@@ -31,6 +31,7 @@ import {
 } from "@/lib/utils";
 import { EditStockDialog } from "./EditStockDialog";
 import { AddPurchaseDialog } from "./AddPurchaseDialog";
+import { SwipeRow } from "./SwipeRow";
 
 type SortKey = "name" | "totalQty" | "nearestExpiryDays" | "totalValue" | "lastPurchase";
 
@@ -106,7 +107,21 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
         <AddPurchaseDialog product={purchaseFor} onClose={() => setPurchaseFor(null)} />
       )}
 
-      <div className="card overflow-x-auto">
+      {/* Mobile: swipeable product cards (swipe → Use 1 / Buy again) */}
+      <div className="space-y-2 md:hidden">
+        {sorted.map((g) => (
+          <ProductCardMobile
+            key={g.key}
+            product={g}
+            onUseOne={() => useOne(g)}
+            onBuyAgain={() => setPurchaseFor(g)}
+            onEditLot={setEditLot}
+          />
+        ))}
+      </div>
+
+      {/* Desktop: full table */}
+      <div className="card hidden overflow-x-auto md:block">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b text-left text-xs uppercase tracking-wide text-text-muted">
@@ -281,4 +296,112 @@ function LotRow({ lot, onEdit }: { lot: InventoryDetail; onEdit: () => void }) {
 // Helper to render multiple sibling <tr> without a wrapper element.
 function FragmentRows({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
+}
+
+// Mobile product card: swipe right = Use 1, swipe left = Buy again. Tap to
+// expand the individual purchase lots.
+function ProductCardMobile({
+  product: g,
+  onUseOne,
+  onBuyAgain,
+  onEditLot,
+}: {
+  product: ProductGroup;
+  onUseOne: () => void;
+  onBuyAgain: () => void;
+  onEditLot: (lot: InventoryDetail) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const bucket = expiryBucket(g.nearestExpiryDays);
+  const multi = g.lotCount > 1;
+  return (
+    <SwipeRow
+      left={{ label: "Use 1", icon: <Minus className="h-4 w-4" />, bg: "bg-brand-600 text-white", onAction: onUseOne }}
+      right={{ label: "Buy again", icon: <Plus className="h-4 w-4" />, bg: "bg-sky-600 text-white", onAction: onBuyAgain }}
+    >
+      <div className="card p-3">
+        <button
+          onClick={() => multi && setOpen((o) => !o)}
+          className="flex w-full items-center gap-3 text-left"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate font-medium">{g.name}</span>
+              {g.domainName && (
+                <span className="chip bg-surface-2 text-text-muted ring-border ring-inset">
+                  {g.domainName}
+                </span>
+              )}
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
+              <span className="font-medium text-text">
+                {g.totalQty}
+                {g.unit ? ` ${g.unit}` : ""}
+              </span>
+              {multi && <span>{g.lotCount} lots</span>}
+              {g.locations.length > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {g.locations.join(", ")}
+                </span>
+              )}
+              {g.totalValue > 0 && <span>{formatMoney(g.totalValue, g.currency)}</span>}
+            </div>
+          </div>
+          {g.nearestExpiryDays != null && (
+            <span className={cn("chip shrink-0 ring-inset", EXPIRY_STYLES[bucket])}>
+              {expiryLabel(g.nearestExpiryDays)}
+            </span>
+          )}
+          {multi &&
+            (open ? (
+              <ChevronDown className="h-4 w-4 shrink-0 text-text-muted" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0 text-text-muted" />
+            ))}
+        </button>
+
+        {open && (
+          <div className="mt-2 space-y-2 border-t pt-2">
+            {g.lots.map((lot) => (
+              <MobileLotRow key={lot.id} lot={lot} onEdit={() => onEditLot(lot)} />
+            ))}
+          </div>
+        )}
+      </div>
+    </SwipeRow>
+  );
+}
+
+function MobileLotRow({ lot, onEdit }: { lot: InventoryDetail; onEdit: () => void }) {
+  const consume = useConsume();
+  const setStatus = useSetStatus();
+  const del = useDeleteStock();
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <div className="min-w-0 flex-1">
+        <div className="text-text">
+          {lot.quantity}
+          {lot.unit ? ` ${lot.unit}` : ""} · {formatMoney(lot.price, lot.currency)}
+        </div>
+        <div className="truncate text-text-muted">
+          {formatDate(lot.purchase_date)}
+          {lot.store_name ? ` · ${lot.store_name}` : ""}
+          {lot.expiry_date ? ` · ${expiryLabel(lot.days_to_expiry)}` : ""}
+        </div>
+      </div>
+      <button onClick={() => consume.mutate({ id: lot.id, quantity: Number(lot.quantity) })} className="rounded-lg p-1.5 hover:bg-surface-2" title="Use one">
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <button onClick={onEdit} className="rounded-lg p-1.5 hover:bg-surface-2" title="Edit">
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+      <button onClick={() => setStatus.mutate({ id: lot.id, status: "finished" })} className="rounded-lg p-1.5 hover:bg-surface-2" title="Finish">
+        <Check className="h-3.5 w-3.5" />
+      </button>
+      <button onClick={() => del.mutate(lot.id)} className="rounded-lg p-1.5 text-rose-500 hover:bg-surface-2" title="Delete">
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
 }
