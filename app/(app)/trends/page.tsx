@@ -5,157 +5,187 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Repeat, TrendingUp, Recycle, Tag } from "lucide-react";
-import { useTrendsData } from "@/lib/queries";
-import { formatMoney } from "@/lib/utils";
+import {
+  TrendingUp,
+  Wallet,
+  Trash2,
+  Gauge,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react";
+import { useTrendsData, useRefData } from "@/lib/queries";
+import {
+  RANGES,
+  type RangeKey,
+  inRange,
+  monthlySpend,
+  spendBy,
+  spendBetween,
+  priceTrends,
+  basketInflation,
+  rebuyFrequency,
+} from "@/lib/trends";
+import { cn, formatMoney } from "@/lib/utils";
+
+type SortKey = "change" | "spend" | "name";
 
 export default function TrendsPage() {
-  const { data: rows = [], isLoading } = useTrendsData();
-  const currency = rows[0]?.currency ?? "INR";
+  const { data: all = [], isLoading } = useTrendsData();
+  const { data: ref } = useRefData();
 
-  // --- Rebuy frequency: how often each item is purchased ----------------
-  const rebuy = useMemo(() => {
-    const map = new Map<string, { name: string; dates: string[] }>();
-    for (const r of rows) {
-      const k = r.item_name.toLowerCase();
-      if (!map.has(k)) map.set(k, { name: r.item_name, dates: [] });
-      map.get(k)!.dates.push(r.purchase_date);
-    }
-    return [...map.values()]
-      .map((v) => {
-        const sorted = v.dates.sort();
-        let avgGap: number | null = null;
-        if (sorted.length > 1) {
-          let total = 0;
-          for (let i = 1; i < sorted.length; i++)
-            total += (+new Date(sorted[i]) - +new Date(sorted[i - 1])) / 86400000;
-          avgGap = Math.round(total / (sorted.length - 1));
-        }
-        return { name: v.name, count: sorted.length, avgGap };
-      })
-      .sort((a, b) => b.count - a.count);
-  }, [rows]);
+  const [range, setRange] = useState<RangeKey>("6m");
+  const [domainId, setDomainId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("change");
+  const [openKey, setOpenKey] = useState<string | null>(null);
 
-  // --- Monthly spend ----------------------------------------------------
-  const spend = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of rows) {
-      if (r.price == null) continue;
-      const key = r.purchase_date.slice(0, 7); // YYYY-MM
-      map.set(key, (map.get(key) ?? 0) + Number(r.price));
-    }
-    return [...map.entries()]
-      .sort()
-      .slice(-12)
-      .map(([month, total]) => ({
-        month: new Date(month + "-01").toLocaleDateString(undefined, {
-          month: "short",
-          year: "2-digit",
-        }),
-        total: Math.round(total),
-      }));
-  }, [rows]);
+  // Domain filter applies to everything; range applies to in-window analytics.
+  const domainLots = useMemo(
+    () => (domainId ? all.filter((l) => l.domain_id === domainId) : all),
+    [all, domainId],
+  );
+  const lots = useMemo(() => inRange(domainLots, range), [domainLots, range]);
+  const currency = all[0]?.currency ?? "INR";
 
-  // --- Waste: used vs wasted -------------------------------------------
-  const waste = useMemo(() => {
-    let used = 0,
-      expired = 0,
-      discarded = 0;
-    for (const r of rows) {
-      if (r.status === "finished") used++;
-      else if (r.status === "expired") expired++;
-      else if (r.status === "discarded") discarded++;
-    }
-    return { used, expired, discarded, wasted: expired + discarded };
-  }, [rows]);
+  const spend = useMemo(() => monthlySpend(lots), [lots]);
+  const trends = useMemo(() => priceTrends(lots), [lots]);
+  const inflation = useMemo(() => basketInflation(trends), [trends]);
+  const byCategory = useMemo(() => spendBy(lots, (l) => l.category_name).slice(0, 6), [lots]);
+  const byStore = useMemo(() => spendBy(lots, (l) => l.store_name).slice(0, 6), [lots]);
+  const rebuy = useMemo(() => rebuyFrequency(lots), [lots]);
 
-  // --- Per-item cost-per-unit over time --------------------------------
-  // Items that have at least one priced purchase, most-bought first.
-  const pricedItems = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of rows) {
-      if (r.price == null) continue;
-      map.set(r.item_name, (map.get(r.item_name) ?? 0) + 1);
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name);
-  }, [rows]);
+  const totalSpent = spend.reduce((s, d) => s + d.total, 0);
+  const months = Math.max(1, spend.length);
+  const wasted = useMemo(
+    () =>
+      lots.reduce(
+        (s, l) =>
+          (l.status === "expired" || l.status === "discarded") && l.price != null
+            ? s + Number(l.price)
+            : s,
+        0,
+      ),
+    [lots],
+  );
 
-  const [selectedItem, setSelectedItem] = useState("");
-  const activeItem = selectedItem || pricedItems[0] || "";
+  // Month-over-month comparison (uses fixed calendar months, not the range).
+  const mom = useMemo(() => {
+    const now = new Date();
+    const f = (y: number, m: number) => new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const thisM = spendBetween(domainLots, f(y, m), f(y, m + 1));
+    const lastM = spendBetween(domainLots, f(y, m - 1), f(y, m));
+    const pct = lastM > 0 ? Math.round(((thisM - lastM) / lastM) * 100) : null;
+    return { thisM: Math.round(thisM), pct };
+  }, [domainLots]);
 
-  const costSeries = useMemo(() => {
-    return rows
-      .filter(
-        (r) =>
-          r.item_name === activeItem && r.price != null && Number(r.quantity) > 0,
-      )
-      .map((r) => ({
-        ts: +new Date(r.purchase_date),
-        date: new Date(r.purchase_date).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "2-digit",
-        }),
-        unit: Math.round((Number(r.price) / Number(r.quantity)) * 100) / 100,
-      }))
-      .sort((a, b) => a.ts - b.ts);
-  }, [rows, activeItem]);
+  const leaderboard = useMemo(() => {
+    let arr = trends;
+    const q = search.trim().toLowerCase();
+    if (q) arr = arr.filter((t) => t.name.toLowerCase().includes(q));
+    return [...arr].sort((a, b) => {
+      if (sort === "spend") return b.totalSpend - a.totalSpend;
+      if (sort === "name") return a.name.localeCompare(b.name);
+      return Math.abs(b.changePct) - Math.abs(a.changePct);
+    });
+  }, [trends, search, sort]);
 
-  const costDelta =
-    costSeries.length > 1
-      ? costSeries[costSeries.length - 1].unit - costSeries[0].unit
-      : null;
-
-  const totalSpend = spend.reduce((s, d) => s + d.total, 0);
+  const biggestMover = useMemo(
+    () => [...trends].sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))[0],
+    [trends],
+  );
 
   if (isLoading)
     return <div className="p-8 text-sm text-text-muted">Crunching your history…</div>;
 
-  if (rows.length === 0)
+  if (all.length === 0)
     return (
       <div className="mx-auto max-w-3xl">
         <h1 className="mb-2 text-2xl font-semibold tracking-tight">Trends</h1>
         <div className="card p-10 text-center text-sm text-text-muted">
-          Trends appear once you’ve added stock and marked some items finished.
-          Come back after a few weeks of use.
+          Trends appear once you’ve logged a few purchases with prices.
         </div>
       </div>
     );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Trends</h1>
-        <p className="text-sm text-text-muted">
-          Patterns over time — what you rebuy, what you spend, what you waste.
-        </p>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Trends</h1>
+          <p className="text-sm text-text-muted">What you buy, spend, and waste over time.</p>
+        </div>
+        <div className="flex rounded-xl bg-surface-2 p-1">
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setRange(r.key)}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                range === r.key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Domain filter */}
+      {ref && ref.domains.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <Chip active={domainId === null} onClick={() => setDomainId(null)}>
+            All types
+          </Chip>
+          {ref.domains.map((d) => (
+            <Chip key={d.id} active={domainId === d.id} onClick={() => setDomainId(d.id)}>
+              {d.name}
+            </Chip>
+          ))}
+        </div>
+      )}
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat icon={Wallet} label={`Spent · ${range === "all" ? "all time" : range.toUpperCase()}`} value={formatMoney(totalSpent, currency)} />
+        <Stat icon={TrendingUp} label="Avg / month" value={formatMoney(Math.round(totalSpent / months), currency)} />
+        <Stat icon={Trash2} label="Wasted" value={formatMoney(Math.round(wasted), currency)} tone={wasted > 0 ? "rose" : undefined} />
+        <Stat
+          icon={Gauge}
+          label="Basket inflation"
+          value={inflation == null ? "—" : `${inflation > 0 ? "+" : ""}${inflation}%`}
+          tone={inflation != null && inflation > 0 ? "rose" : inflation != null && inflation < 0 ? "brand" : undefined}
+        />
       </div>
 
       {/* Spend over time */}
       <section className="card p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <TrendingUp className="h-5 w-5 text-brand-500" />
-            Spend over time
-          </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Spend over time</h2>
           <span className="text-sm text-text-muted">
-            {formatMoney(totalSpend, currency)} total
+            This month {formatMoney(mom.thisM, currency)}
+            {mom.pct != null && (
+              <span className={cn("ml-1 font-medium", mom.pct > 0 ? "text-rose-500" : "text-brand-600")}>
+                {mom.pct > 0 ? "▲" : "▼"} {Math.abs(mom.pct)}% vs last
+              </span>
+            )}
           </span>
         </div>
         {spend.length === 0 ? (
-          <Hint text="Add prices when logging stock to see spend trends." />
+          <Hint text="Add prices when logging stock to see spend." />
         ) : (
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart data={spend} margin={{ left: -10, right: 8, top: 8 }}>
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
               <YAxis tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
@@ -170,139 +200,149 @@ export default function TrendsPage() {
         )}
       </section>
 
-      {/* Cost per unit over time, per item */}
+      {/* Price tracker leaderboard */}
       <section className="card p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <Tag className="h-5 w-5 text-brand-500" />
-            Price per unit over time
-          </h2>
-          {pricedItems.length > 0 && (
-            <select
-              className="input max-w-[220px]"
-              value={activeItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
-            >
-              {pricedItems.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          )}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Price tracker</h2>
+          <div className="flex gap-1 rounded-lg bg-surface-2 p-0.5 text-xs">
+            {([
+              ["change", "Biggest change"],
+              ["spend", "Most spent"],
+              ["name", "A–Z"],
+            ] as [SortKey, string][]).map(([k, lbl]) => (
+              <button
+                key={k}
+                onClick={() => setSort(k)}
+                className={cn(
+                  "rounded-md px-2 py-1 font-medium",
+                  sort === k ? "bg-surface text-text shadow-sm" : "text-text-muted",
+                )}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {pricedItems.length === 0 ? (
-          <Hint text="Add prices when logging stock to track how an item's cost changes." />
-        ) : costSeries.length < 2 ? (
-          <Hint
-            text={`Only one priced purchase of “${activeItem}” so far — buy it again to see the trend.`}
+        <div className="relative mb-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-text-muted" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Filter ${trends.length} tracked item${trends.length === 1 ? "" : "s"}…`}
+            className="input pl-10"
           />
+        </div>
+
+        {trends.length === 0 ? (
+          <Hint text="Buy an item twice (with prices) and its price trend shows up here." />
+        ) : leaderboard.length === 0 ? (
+          <Hint text="No items match that search." />
         ) : (
-          <>
-            <div className="mb-2 flex items-baseline gap-3 text-sm">
-              <span className="text-text-muted">
-                Latest:{" "}
-                <span className="font-semibold text-text">
-                  {formatMoney(costSeries[costSeries.length - 1].unit, currency)}
-                </span>{" "}
-                / unit
-              </span>
-              {costDelta != null && costDelta !== 0 && (
-                <span
-                  className={
-                    costDelta > 0 ? "text-rose-500" : "text-brand-600"
-                  }
-                >
-                  {costDelta > 0 ? "▲" : "▼"} {formatMoney(Math.abs(costDelta), currency)} since first buy
-                </span>
-              )}
-            </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={costSeries} margin={{ left: -10, right: 8, top: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
-                <YAxis tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={(v) => [formatMoney(Number(v), currency), "Per unit"]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="unit"
-                  stroke="var(--color-brand-500)"
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: "var(--color-brand-500)" }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </>
+          <div className="divide-y">
+            {leaderboard.map((t) => {
+              const up = t.changePct > 0;
+              const flat = t.changePct === 0;
+              const open = openKey === t.key;
+              return (
+                <div key={t.key}>
+                  <button
+                    onClick={() => setOpenKey(open ? null : t.key)}
+                    className="flex w-full items-center gap-3 py-2.5 text-left"
+                  >
+                    {open ? (
+                      <ChevronDown className="h-4 w-4 shrink-0 text-text-muted" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 shrink-0 text-text-muted" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {t.name}
+                      {t.unit && <span className="text-text-muted"> · /{t.unit}</span>}
+                    </span>
+                    <span className="shrink-0 text-sm">{formatMoney(t.last, currency)}</span>
+                    <span
+                      className={cn(
+                        "chip shrink-0 ring-inset",
+                        flat
+                          ? "bg-surface-2 text-text-muted ring-border"
+                          : up
+                            ? "bg-rose-500/15 text-rose-600 ring-rose-500/30 dark:text-rose-400"
+                            : "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 dark:text-emerald-400",
+                      )}
+                    >
+                      {!flat && (up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />)}
+                      {up ? "+" : ""}
+                      {t.changePct}%
+                    </span>
+                    <Sparkline
+                      series={t.series}
+                      color={flat ? "var(--text-muted)" : up ? "#f43f5e" : "#10b981"}
+                    />
+                  </button>
+                  {open && (
+                    <div className="pb-3 pl-7">
+                      <p className="mb-1 text-xs text-text-muted">
+                        {formatMoney(t.first, currency)} → {formatMoney(t.last, currency)} over {t.buys} buys ·{" "}
+                        {formatMoney(t.totalSpend, currency)} total
+                      </p>
+                      <ResponsiveContainer width="100%" height={160}>
+                        <LineChart data={t.series} margin={{ left: -12, right: 8, top: 6 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                          <XAxis
+                            dataKey="date"
+                            tickFormatter={(d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                            tick={{ fontSize: 11 }}
+                            stroke="var(--text-muted)"
+                          />
+                          <YAxis tick={{ fontSize: 11 }} stroke="var(--text-muted)" width={40} />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            labelFormatter={(d) => new Date(d).toLocaleDateString()}
+                            formatter={(v) => [formatMoney(Number(v), currency), "Per unit"]}
+                          />
+                          <Line type="monotone" dataKey="unit" stroke="var(--color-brand-500)" strokeWidth={2.5} dot={{ r: 3 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {biggestMover && (
+          <p className="mt-3 text-xs text-text-muted">
+            Biggest mover: <span className="font-medium text-text">{biggestMover.name}</span>{" "}
+            {biggestMover.changePct > 0 ? "+" : ""}
+            {biggestMover.changePct}%
+          </p>
         )}
       </section>
 
+      {/* Spend breakdowns */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Rebuy frequency */}
-        <section className="card p-5">
-          <h2 className="mb-4 flex items-center gap-2 font-semibold">
-            <Repeat className="h-5 w-5 text-brand-500" />
-            How often you rebuy
-          </h2>
+        <Breakdown title="Spend by category" rows={byCategory} currency={currency} empty="Tag items with a category to see this." />
+        <Breakdown title="Spend by store" rows={byStore} currency={currency} empty="Record where you buy to see this." />
+      </div>
+
+      {/* Rebuy frequency */}
+      <section className="card p-5">
+        <h2 className="mb-3 font-semibold">How often you rebuy</h2>
+        {rebuy.length === 0 ? (
+          <Hint text="Nothing yet." />
+        ) : (
           <ul className="space-y-2">
             {rebuy.slice(0, 8).map((r) => (
               <li key={r.name} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate font-medium">{r.name}</span>
                 <span className="shrink-0 text-text-muted">
-                  {r.count}×
-                  {r.avgGap != null && (
-                    <span className="ml-2 text-xs">~every {r.avgGap}d</span>
-                  )}
+                  {r.count}×{r.avgGap != null && <span className="ml-2 text-xs">~every {r.avgGap}d</span>}
                 </span>
               </li>
             ))}
           </ul>
-        </section>
-
-        {/* Waste */}
-        <section className="card p-5">
-          <h2 className="mb-4 flex items-center gap-2 font-semibold">
-            <Recycle className="h-5 w-5 text-brand-500" />
-            Used vs wasted
-          </h2>
-          {waste.used + waste.wasted === 0 ? (
-            <Hint text="Mark items finished or expired to track waste." />
-          ) : (
-            <div className="flex items-center gap-4">
-              <ResponsiveContainer width="50%" height={160}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: "Used up", value: waste.used },
-                      { name: "Wasted", value: waste.wasted },
-                    ]}
-                    dataKey="value"
-                    innerRadius={42}
-                    outerRadius={64}
-                    paddingAngle={2}
-                  >
-                    <Cell fill="var(--color-brand-500)" />
-                    <Cell fill="#f43f5e" />
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 text-sm">
-                <Legend color="var(--color-brand-500)" label="Used up" value={waste.used} />
-                <Legend color="#f43f5e" label="Expired/tossed" value={waste.wasted} />
-                <p className="pt-1 text-xs text-text-muted">
-                  {waste.used + waste.wasted > 0 &&
-                    `${Math.round((waste.used / (waste.used + waste.wasted)) * 100)}% used before waste`}
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -315,13 +355,112 @@ const tooltipStyle = {
   color: "var(--text)",
 };
 
-function Legend({ color, label, value }: { color: string; label: string; value: number }) {
+const TONES: Record<string, string> = {
+  brand: "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300",
+  rose: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+  slate: "bg-surface-2 text-text-muted",
+};
+
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  tone = "slate",
+}: {
+  icon: typeof Wallet;
+  label: string;
+  value: string;
+  tone?: keyof typeof TONES;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="h-3 w-3 rounded-full" style={{ background: color }} />
-      <span className="font-medium">{value}</span>
-      <span className="text-text-muted">{label}</span>
+    <div className="card p-4">
+      <div className={`mb-3 inline-flex rounded-lg p-2 ${TONES[tone]}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <p className="text-xl font-semibold tracking-tight">{value}</p>
+      <p className="text-xs text-text-muted">{label}</p>
     </div>
+  );
+}
+
+function Sparkline({ series, color }: { series: { unit: number }[]; color: string }) {
+  const vals = series.map((s) => s.unit);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const span = max - min || 1;
+  const n = vals.length;
+  const pts = vals
+    .map((v, i) => {
+      const x = n === 1 ? 0 : (i / (n - 1)) * 64;
+      const y = 19 - ((v - min) / span) * 18;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width="64" height="20" viewBox="0 0 64 20" className="shrink-0" aria-hidden>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function Breakdown({
+  title,
+  rows,
+  currency,
+  empty,
+}: {
+  title: string;
+  rows: { label: string; total: number }[];
+  currency: string;
+  empty: string;
+}) {
+  const max = rows[0]?.total ?? 1;
+  return (
+    <section className="card p-5">
+      <h2 className="mb-3 font-semibold">{title}</h2>
+      {rows.length === 0 ? (
+        <Hint text={empty} />
+      ) : (
+        <div className="space-y-3">
+          {rows.map((r) => (
+            <div key={r.label}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="truncate">{r.label}</span>
+                <span className="shrink-0 text-text-muted">{formatMoney(r.total, currency)}</span>
+              </div>
+              <div className="mt-1 h-1.5 rounded-full bg-surface-2">
+                <div
+                  className="h-1.5 rounded-full bg-brand-500"
+                  style={{ width: `${Math.max(4, (r.total / max) * 100)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "chip ring-border ring-inset transition-colors",
+        active ? "bg-brand-600 text-white ring-brand-600" : "bg-surface text-text-muted hover:text-text",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
