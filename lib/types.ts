@@ -114,6 +114,20 @@ export interface Subscription {
   updated_at: string;
 }
 
+export interface ShoppingItem {
+  id: string;
+  household_id: string;
+  name: string;
+  note: string | null;
+  quantity: number | null;
+  unit: string | null;
+  item_id: string | null;
+  source: "manual" | "restock" | "finished";
+  is_bought: boolean;
+  bought_at: string | null;
+  created_at: string;
+}
+
 // Reference data bundled together for forms/filters.
 export interface RefData {
   household: Household;

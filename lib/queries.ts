@@ -16,6 +16,7 @@ import type {
   RefData,
   Store,
   Subscription,
+  ShoppingItem,
 } from "@/lib/types";
 import { advancePayment } from "@/lib/subscriptions";
 
@@ -549,5 +550,102 @@ export function useMarkSubscriptionPaid() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Shopping list
+// ---------------------------------------------------------------------------
+export function useShoppingList() {
+  const { data: householdId } = useHouseholdId();
+  return useQuery({
+    queryKey: ["shopping", householdId],
+    enabled: !!householdId,
+    queryFn: async (): Promise<ShoppingItem[]> => {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb
+        .from("shopping_list_items")
+        .select("*")
+        .eq("household_id", householdId!)
+        .order("is_bought")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ShoppingItem[];
+    },
+  });
+}
+
+export interface ShoppingInput {
+  name: string;
+  note?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+  itemId?: string | null;
+  source?: ShoppingItem["source"];
+}
+
+export function useAddShoppingItems() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async (inputs: ShoppingInput[]) => {
+      const sb = supabaseBrowser();
+      const rows = inputs.map((i) => ({
+        household_id: householdId,
+        name: i.name,
+        note: i.note ?? null,
+        quantity: i.quantity ?? null,
+        unit: i.unit ?? null,
+        item_id: i.itemId ?? null,
+        source: i.source ?? "manual",
+      }));
+      const { error } = await sb.from("shopping_list_items").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+  });
+}
+
+export function useToggleShoppingItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_bought }: { id: string; is_bought: boolean }) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb
+        .from("shopping_list_items")
+        .update({ is_bought, bought_at: is_bought ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+  });
+}
+
+export function useDeleteShoppingItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("shopping_list_items").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+  });
+}
+
+export function useClearBought() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async () => {
+      const sb = supabaseBrowser();
+      const { error } = await sb
+        .from("shopping_list_items")
+        .delete()
+        .eq("household_id", householdId!)
+        .eq("is_bought", true);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
   });
 }

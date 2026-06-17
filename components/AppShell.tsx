@@ -12,6 +12,7 @@ import {
   CreditCard,
   CalendarClock,
   Command,
+  ShoppingCart,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -20,17 +21,19 @@ import { CheckHaveSearch } from "./CheckHaveSearch";
 import { CommandPalette } from "./CommandPalette";
 
 const NAV = [
-  { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true },
-  { href: "/upcoming", label: "Upcoming", short: "Soon", icon: CalendarClock },
-  { href: "/inventory", label: "Inventory", short: "Stock", icon: Boxes },
-  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard },
-  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle },
-  { href: "/trends", label: "Trends", short: "Trends", icon: LineChart },
-  { href: "/settings", label: "Settings", short: "Settings", icon: Settings },
+  { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
+  { href: "/upcoming", label: "Upcoming", short: "Soon", icon: CalendarClock, mobile: true },
+  { href: "/inventory", label: "Inventory", short: "Stock", icon: Boxes, mobile: true },
+  { href: "/shopping", label: "Shopping", short: "List", icon: ShoppingCart, mobile: true },
+  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: true },
+  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: false },
+  { href: "/trends", label: "Trends", short: "Trends", icon: LineChart, mobile: false },
+  { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },
 ];
 
-// Mobile bottom bar omits "Add" (reachable via the + buttons) to stay uncrowded.
-const MOBILE_NAV = NAV.filter((n) => n.href !== "/add");
+// Mobile bottom bar shows the 5 most-used; the rest are reachable via the
+// sidebar (desktop) and the ⌘K command palette.
+const MOBILE_NAV = NAV.filter((n) => n.mobile);
 
 export function AppShell({
   email,
