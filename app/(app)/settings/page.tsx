@@ -6,6 +6,7 @@ import { Copy, Plus, Trash2, Check, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useHouseholdId, useRefData } from "@/lib/queries";
+import { NotificationToggle } from "@/components/NotificationToggle";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 
@@ -113,6 +114,12 @@ export default function SettingsPage() {
             Anyone you give this code to can join and share your inventory.
           </p>
         </div>
+      </section>
+
+      {/* Notifications */}
+      <section className="card space-y-3 p-5">
+        <h2 className="font-semibold">Notifications</h2>
+        <NotificationToggle />
       </section>
 
       {/* Members */}

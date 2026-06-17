@@ -4,6 +4,8 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
+  type QueryKey,
 } from "@tanstack/react-query";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import type {
@@ -19,6 +21,13 @@ import type {
   ShoppingItem,
 } from "@/lib/types";
 import { advancePayment } from "@/lib/subscriptions";
+
+// Optimistic-update helpers: snapshot matching caches, then restore on error.
+// (Offline writes apply to the cache immediately and replay on reconnect.)
+type Snapshot = [QueryKey, unknown][];
+function rollback(qc: QueryClient, snap: Snapshot | undefined) {
+  snap?.forEach(([key, data]) => qc.setQueryData(key, data));
+}
 
 // ---------------------------------------------------------------------------
 // Household resolution — every query is scoped to the signed-in user's
@@ -414,7 +423,21 @@ export function useConsume() {
       if (error) throw error;
       return { finished: next <= 0, remaining: next };
     },
-    onSuccess: () => {
+    onMutate: async ({ id, quantity, amount = 1 }) => {
+      await qc.cancelQueries({ queryKey: ["inventory"] });
+      const snap = qc.getQueriesData({ queryKey: ["inventory"] }) as Snapshot;
+      const next = Math.max(0, Number(quantity) - amount);
+      qc.setQueriesData<InventoryDetail[]>({ queryKey: ["inventory"] }, (old) =>
+        !old
+          ? old
+          : next <= 0
+            ? old.filter((r) => r.id !== id)
+            : old.map((r) => (r.id === id ? { ...r, quantity: next } : r)),
+      );
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["inventory"] });
       qc.invalidateQueries({ queryKey: ["stock-search"] });
       qc.invalidateQueries({ queryKey: ["trends"] });
@@ -602,7 +625,31 @@ export function useAddShoppingItems() {
       const { error } = await sb.from("shopping_list_items").insert(rows);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+    onMutate: async (inputs) => {
+      await qc.cancelQueries({ queryKey: ["shopping"] });
+      const snap = qc.getQueriesData({ queryKey: ["shopping"] }) as Snapshot;
+      const now = new Date().toISOString();
+      const temp: ShoppingItem[] = inputs.map((i, idx) => ({
+        id: `temp-${Date.now()}-${idx}`,
+        household_id: householdId ?? "",
+        name: i.name,
+        note: i.note ?? null,
+        quantity: i.quantity ?? null,
+        unit: i.unit ?? null,
+        item_id: i.itemId ?? null,
+        source: i.source ?? "manual",
+        is_bought: false,
+        bought_at: null,
+        created_at: now,
+      }));
+      qc.setQueriesData<ShoppingItem[]>({ queryKey: ["shopping"] }, (old) => [
+        ...temp,
+        ...(old ?? []),
+      ]);
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
   });
 }
 
@@ -617,7 +664,20 @@ export function useToggleShoppingItem() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+    onMutate: async ({ id, is_bought }) => {
+      await qc.cancelQueries({ queryKey: ["shopping"] });
+      const snap = qc.getQueriesData({ queryKey: ["shopping"] }) as Snapshot;
+      qc.setQueriesData<ShoppingItem[]>({ queryKey: ["shopping"] }, (old) =>
+        old?.map((i) =>
+          i.id === id
+            ? { ...i, is_bought, bought_at: is_bought ? new Date().toISOString() : null }
+            : i,
+        ),
+      );
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
   });
 }
 
@@ -629,7 +689,16 @@ export function useDeleteShoppingItem() {
       const { error } = await sb.from("shopping_list_items").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["shopping"] });
+      const snap = qc.getQueriesData({ queryKey: ["shopping"] }) as Snapshot;
+      qc.setQueriesData<ShoppingItem[]>({ queryKey: ["shopping"] }, (old) =>
+        old?.filter((i) => i.id !== id),
+      );
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
   });
 }
 

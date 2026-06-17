@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import { CheckHaveSearch } from "./CheckHaveSearch";
 import { CommandPalette } from "./CommandPalette";
+import { SyncStatus } from "./SyncStatus";
 
 const NAV = [
   { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
@@ -114,6 +115,7 @@ export function AppShell({
           <div className="flex-1">
             <CheckHaveSearch />
           </div>
+          <SyncStatus />
           <button
             onClick={() => window.dispatchEvent(new Event("trove:command"))}
             className="btn-ghost shrink-0 px-2 py-2"
