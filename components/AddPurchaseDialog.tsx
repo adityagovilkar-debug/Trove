@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useAddStock, useRefData } from "@/lib/queries";
 import type { ProductGroup } from "@/lib/products";
+import { locationOptions } from "@/lib/locations";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -119,9 +120,9 @@ export function AddPurchaseDialog({
               <label className="label">Kept in</label>
               <select className="input" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
                 <option value="">—</option>
-                {ref?.locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
+                {locationOptions(ref?.locations ?? []).map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
                   </option>
                 ))}
               </select>

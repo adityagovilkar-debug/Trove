@@ -2,7 +2,7 @@
 
 import { Search, Check, X, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useStockSearch } from "@/lib/queries";
+import { useStockSearch, useLocationPaths } from "@/lib/queries";
 import { expiryBucket, EXPIRY_STYLES, expiryLabel, cn } from "@/lib/utils";
 
 // The headline feature: type a grocery name and instantly see whether you
@@ -28,6 +28,7 @@ export function CheckHaveSearch() {
   }, []);
 
   const { data: results = [], isFetching } = useStockSearch(debounced);
+  const locPaths = useLocationPaths();
   const showPanel = open && debounced.trim().length >= 1;
   const totalQty = results.reduce((s, r) => s + Number(r.quantity || 0), 0);
 
@@ -93,8 +94,11 @@ export function CheckHaveSearch() {
                           )}
                         </p>
                         <p className="flex items-center gap-1 truncate text-xs text-text-muted">
-                          <MapPin className="h-3 w-3" />
-                          {r.location_name ?? "Unfiled"} · {r.quantity}
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {(r.location_id && locPaths.get(r.location_id)) ||
+                            r.location_name ||
+                            "Unfiled"}{" "}
+                          · {r.quantity}
                           {r.unit ? ` ${r.unit}` : ""}
                         </p>
                       </div>

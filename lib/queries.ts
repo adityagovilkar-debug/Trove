@@ -21,6 +21,8 @@ import type {
   ShoppingItem,
 } from "@/lib/types";
 import { advancePayment } from "@/lib/subscriptions";
+import { buildPathMap } from "@/lib/locations";
+import { useMemo } from "react";
 
 // Optimistic-update helpers: snapshot matching caches, then restore on error.
 // (Offline writes apply to the cache immediately and replay on reconnect.)
@@ -104,6 +106,12 @@ export function useRefData() {
       };
     },
   });
+}
+
+// Map of location id → full path, derived from the cached reference data.
+export function useLocationPaths() {
+  const { data: ref } = useRefData();
+  return useMemo(() => buildPathMap(ref?.locations ?? []), [ref?.locations]);
 }
 
 // ---------------------------------------------------------------------------

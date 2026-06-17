@@ -8,6 +8,7 @@ import { useAddStock, useRefData } from "@/lib/queries";
 import { lookupBarcode, lookupBook } from "@/lib/barcode";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { AttributeFields } from "@/components/AttributeFields";
+import { locationOptions } from "@/lib/locations";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -313,9 +314,9 @@ export default function AddPage() {
               onChange={(e) => setLocationId(e.target.value)}
             >
               <option value="">—</option>
-              {ref?.locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
+              {locationOptions(ref?.locations ?? []).map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
                 </option>
               ))}
             </select>

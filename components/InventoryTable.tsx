@@ -20,7 +20,12 @@ import {
   lotToConsume,
   type ProductGroup,
 } from "@/lib/products";
-import { useConsume, useDeleteStock, useSetStatus } from "@/lib/queries";
+import {
+  useConsume,
+  useDeleteStock,
+  useSetStatus,
+  useLocationPaths,
+} from "@/lib/queries";
 import {
   cn,
   EXPIRY_STYLES,
@@ -230,7 +235,10 @@ function LotRow({ lot, onEdit }: { lot: InventoryDetail; onEdit: () => void }) {
   const consume = useConsume();
   const setStatus = useSetStatus();
   const del = useDeleteStock();
+  const locPaths = useLocationPaths();
   const bucket = expiryBucket(lot.days_to_expiry);
+  const locationLabel =
+    (lot.location_id && locPaths.get(lot.location_id)) || lot.location_name || "—";
   return (
     <tr className="border-b bg-surface-2/30 text-xs">
       <td />
@@ -247,7 +255,7 @@ function LotRow({ lot, onEdit }: { lot: InventoryDetail; onEdit: () => void }) {
       <td className="px-4 py-2 text-text-muted">
         <span className="inline-flex items-center gap-1">
           <MapPin className="h-3 w-3" />
-          {lot.location_name ?? "—"}
+          {locationLabel}
         </span>
       </td>
       <td className="px-4 py-2">

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useHouseholdId, useRefData } from "@/lib/queries";
 import { NotificationToggle } from "@/components/NotificationToggle";
+import { LocationManager } from "@/components/LocationManager";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 
@@ -151,12 +152,10 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Locations */}
-      <EditableList
-        title="Locations"
-        placeholder="e.g. Garage shelf"
-        items={(ref?.locations ?? []).map((l) => ({ id: l.id, label: l.name }))}
-        onAdd={(name) => addRef("locations", { name })}
+      {/* Locations (nested) */}
+      <LocationManager
+        locations={ref?.locations ?? []}
+        onAdd={(name, parentId) => addRef("locations", { name, parent_id: parentId })}
         onDelete={(id) => deleteRef("locations", id)}
       />
 

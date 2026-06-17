@@ -13,7 +13,12 @@ import {
   Store as StoreIcon,
 } from "lucide-react";
 import type { InventoryDetail } from "@/lib/types";
-import { useConsume, useDeleteStock, useSetStatus } from "@/lib/queries";
+import {
+  useConsume,
+  useDeleteStock,
+  useSetStatus,
+  useLocationPaths,
+} from "@/lib/queries";
 import { prominentAttributes } from "@/lib/domainFields";
 import { EditStockDialog } from "./EditStockDialog";
 import {
@@ -36,6 +41,9 @@ export function StockCard({ row }: { row: InventoryDetail }) {
   const isActive = row.status === "active";
   const canUseOne = isActive && Number(row.quantity) > 1;
   const attrs = prominentAttributes(row.domain_key, row.item_attributes);
+  const locPaths = useLocationPaths();
+  const locationLabel =
+    (row.location_id && locPaths.get(row.location_id)) || row.location_name;
 
   function finish() {
     setStatus.mutate(
@@ -95,10 +103,10 @@ export function StockCard({ row }: { row: InventoryDetail }) {
           {attrs.map((a) => (
             <span key={a.label}>{a.value}</span>
           ))}
-          {row.location_name && (
+          {locationLabel && (
             <span className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
-              {row.location_name}
+              {locationLabel}
             </span>
           )}
           {row.store_name && (

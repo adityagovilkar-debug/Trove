@@ -7,6 +7,7 @@ import {
   Sun,
   Moon,
   Boxes,
+  ShoppingBasket,
   Clock,
   Wallet,
   CreditCard,
@@ -33,6 +34,7 @@ import {
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { buildUpcoming } from "@/lib/upcoming";
 import { computeRestock, type RestockSuggestion } from "@/lib/restock";
+import { groupIntoProducts } from "@/lib/products";
 import { monthlyCost } from "@/lib/subscriptions";
 import { cn, formatMoney } from "@/lib/utils";
 
@@ -102,6 +104,23 @@ export default function DashboardPage() {
   const currency = active[0]?.currency ?? subs[0]?.currency ?? "INR";
   const upcoming = useMemo(() => buildUpcoming(active, subs).slice(0, 5), [active, subs]);
 
+  // Groceries are the thing that turns over constantly, so the headline metric
+  // is grocery-specific; durables (electronics, books) show in the breakdown.
+  const byType = useMemo(() => {
+    const groups = groupIntoProducts(active);
+    const counts = new Map<string, number>();
+    let grocery = 0;
+    for (const g of groups) {
+      const name = g.domainName ?? "Other";
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+      if (g.domainKey === "grocery") grocery += 1;
+    }
+    const list = [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    return { grocery, list, total: groups.length };
+  }, [active]);
+
   const pendingNames = useMemo(
     () => new Set(shopping.filter((s) => !s.is_bought).map((s) => s.name.toLowerCase())),
     [shopping],
@@ -151,7 +170,7 @@ export default function DashboardPage() {
             {firstName ? `, ${firstName}` : ""}
           </h1>
           <p className="mt-1 text-sm text-text-muted">
-            {active.length} items in stock
+            {byType.grocery} groceries in stock
             {stats.usedPct != null && ` · ${stats.usedPct}% used before waste`}
             {activeSubs.length > 0 &&
               ` · ${formatMoney(stats.subsMonthly, currency)}/mo in subscriptions`}
@@ -177,13 +196,28 @@ export default function DashboardPage() {
         </Link>
       )}
 
-      {/* Metric cards */}
+      {/* Metric cards — grocery-first */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Boxes} label="In stock" value={active.length} />
+        <Stat icon={ShoppingBasket} label="Groceries in stock" value={byType.grocery} />
         <Stat icon={Clock} label="Expiring ≤ 7d" value={stats.expiring} tone={stats.expiring ? "amber" : undefined} />
         <Stat icon={Wallet} label="Spent this month" value={formatMoney(stats.spentThisMonth, currency)} />
         <Stat icon={CreditCard} label="Subscriptions / mo" value={formatMoney(stats.subsMonthly, currency)} />
       </div>
+
+      {/* Everything you own, by type — durables stay visible without dominating */}
+      {byType.list.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-text-muted">By type:</span>
+          {byType.list.map((d) => (
+            <span
+              key={d.name}
+              className="chip bg-surface-2 text-text-muted ring-border ring-inset"
+            >
+              {d.name} <span className="font-semibold text-text">{d.count}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Two-column: upcoming + running low */}
       <div className="grid gap-4 lg:grid-cols-2">

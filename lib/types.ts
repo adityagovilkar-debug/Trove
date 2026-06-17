@@ -30,6 +30,7 @@ export interface Location {
   id: string;
   household_id: string;
   name: string;
+  parent_id: string | null;
 }
 
 export interface Store {

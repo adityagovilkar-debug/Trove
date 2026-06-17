@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { InventoryDetail } from "@/lib/types";
 import { useRefData, useUpdateStock } from "@/lib/queries";
 import { AttributeFields } from "./AttributeFields";
+import { locationOptions } from "@/lib/locations";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
 
@@ -158,9 +159,9 @@ export function EditStockDialog({
               <label className="label">Kept in</label>
               <select className="input" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
                 <option value="">—</option>
-                {ref?.locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
+                {locationOptions(ref?.locations ?? []).map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
                   </option>
                 ))}
               </select>
