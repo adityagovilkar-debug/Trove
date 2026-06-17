@@ -115,6 +115,21 @@ export default function SettingsPage() {
             Anyone you give this code to can join and share your inventory.
           </p>
         </div>
+
+        <label className="flex cursor-pointer items-center justify-between gap-3 border-t pt-4">
+          <div>
+            <p className="text-sm font-medium">Auto-add finished items to shopping list</p>
+            <p className="text-xs text-text-muted">
+              When you finish a grocery, it's added to your list to rebuy.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            className="h-5 w-5 shrink-0 accent-brand-600"
+            checked={ref?.household.auto_shopping ?? true}
+            onChange={(e) => updateHousehold({ auto_shopping: e.target.checked })}
+          />
+        </label>
       </section>
 
       {/* Notifications */}

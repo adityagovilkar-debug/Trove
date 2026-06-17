@@ -31,6 +31,48 @@ function rollback(qc: QueryClient, snap: Snapshot | undefined) {
   snap?.forEach(([key, data]) => qc.setQueryData(key, data));
 }
 
+// When a consumable is used up, optionally drop it onto the shopping list
+// (household setting auto_shopping). Deduped against pending items, and limited
+// to consumable domains so you don't get prompted to "rebuy" a finished laptop.
+const CONSUMABLE_KEYS = new Set<string | null>([null, "grocery", "household", "other"]);
+async function maybeAutoShop(
+  sb: ReturnType<typeof supabaseBrowser>,
+  householdId: string | undefined,
+  inventoryId: string,
+) {
+  if (!householdId) return;
+  try {
+    const { data: hh } = await sb
+      .from("households")
+      .select("auto_shopping")
+      .eq("id", householdId)
+      .maybeSingle();
+    if (!hh?.auto_shopping) return;
+    const { data: row } = await sb
+      .from("inventory_detail")
+      .select("item_id, item_name, domain_key")
+      .eq("id", inventoryId)
+      .maybeSingle();
+    if (!row || !CONSUMABLE_KEYS.has(row.domain_key)) return;
+    const { data: dup } = await sb
+      .from("shopping_list_items")
+      .select("id")
+      .eq("household_id", householdId)
+      .eq("is_bought", false)
+      .ilike("name", row.item_name)
+      .maybeSingle();
+    if (dup) return;
+    await sb.from("shopping_list_items").insert({
+      household_id: householdId,
+      name: row.item_name,
+      item_id: row.item_id,
+      source: "finished",
+    });
+  } catch {
+    // best-effort; never block the main action
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Household resolution — every query is scoped to the signed-in user's
 // household. We resolve it once and cache it.
@@ -296,6 +338,7 @@ export function useAddStock() {
 // Flip a stock row's status (finished / expired / discarded / reactivate).
 export function useSetStatus() {
   const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
   return useMutation({
     mutationFn: async ({
       id,
@@ -314,11 +357,13 @@ export function useSetStatus() {
         })
         .eq("id", id);
       if (error) throw error;
+      if (status === "finished") await maybeAutoShop(sb, householdId, id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inventory"] });
       qc.invalidateQueries({ queryKey: ["stock-search"] });
       qc.invalidateQueries({ queryKey: ["trends"] });
+      qc.invalidateQueries({ queryKey: ["shopping"] });
     },
   });
 }
@@ -411,6 +456,7 @@ export function useUpdateStock() {
 // list stays clean instead of accumulating one entry per unit.
 export function useConsume() {
   const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
   return useMutation({
     mutationFn: async ({
       id,
@@ -429,6 +475,7 @@ export function useConsume() {
           : { quantity: next };
       const { error } = await sb.from("inventory").update(patch).eq("id", id);
       if (error) throw error;
+      if (next <= 0) await maybeAutoShop(sb, householdId, id);
       return { finished: next <= 0, remaining: next };
     },
     onMutate: async ({ id, quantity, amount = 1 }) => {
@@ -449,6 +496,7 @@ export function useConsume() {
       qc.invalidateQueries({ queryKey: ["inventory"] });
       qc.invalidateQueries({ queryKey: ["stock-search"] });
       qc.invalidateQueries({ queryKey: ["trends"] });
+      qc.invalidateQueries({ queryKey: ["shopping"] });
     },
   });
 }

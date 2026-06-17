@@ -6,6 +6,7 @@ export interface Household {
   id: string;
   name: string;
   base_currency: string;
+  auto_shopping: boolean;
   created_at: string;
 }
 

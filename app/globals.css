@@ -20,25 +20,29 @@
   --color-brand-900: #733612;
 }
 
-/* Semantic surface tokens, themed for light/dark. */
+/* Semantic surface tokens — warm neutrals that nod to the honey brand. */
 :root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-2: #f2f2ef;
-  --border: #e6e6e1;
-  --text: #1c1c1a;
-  --text-muted: #6b6b66;
+  color-scheme: light;
+  --bg: #f8f6f1;
+  --surface: #fffdf9;
+  --surface-2: #f1ede4;
+  --border: #e8e2d6;
+  --text: #1f1b15;
+  --text-muted: #716b60;
   --ring: #ed8c0f;
+  --shadow: 0 1px 2px rgba(40, 33, 20, 0.04), 0 6px 16px -8px rgba(40, 33, 20, 0.08);
 }
 
 .dark {
-  --bg: #0c0d0c;
-  --surface: #16181a;
-  --surface-2: #1d2022;
-  --border: #2a2e30;
-  --text: #e9eae8;
-  --text-muted: #9aa0a0;
+  color-scheme: dark;
+  --bg: #0e0d0a;
+  --surface: #1a1813;
+  --surface-2: #232019;
+  --border: #322d24;
+  --text: #ece7dd;
+  --text-muted: #a49d8f;
   --ring: #f6ab2b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 20px -10px rgba(0, 0, 0, 0.55);
 }
 
 @theme inline {
@@ -59,35 +63,44 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
 }
 
 /* Reusable component classes */
 @layer components {
   .card {
-    @apply rounded-2xl border bg-surface shadow-sm;
+    @apply rounded-2xl border bg-surface;
     border-color: var(--border);
+    box-shadow: var(--shadow);
   }
   .btn,
   .btn-primary,
   .btn-ghost,
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2
-           text-sm font-medium transition-colors disabled:opacity-50
-           disabled:pointer-events-none;
+           text-sm font-medium transition-all duration-150 active:scale-[0.98]
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45
+           disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100;
   }
   .btn-primary {
     @apply bg-brand-600 text-white hover:bg-brand-700;
+    box-shadow: 0 1px 2px rgba(120, 54, 18, 0.25);
   }
   .btn-ghost {
     @apply text-text hover:bg-surface-2;
   }
   .btn-outline {
-    @apply border bg-surface hover:bg-surface-2;
+    @apply border bg-surface hover:border-brand-500/40 hover:bg-surface-2;
   }
   .input {
     @apply w-full rounded-xl border bg-surface px-3 py-2 text-sm text-text
-           placeholder:text-text-muted/70 outline-none
-           focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500;
+           outline-none transition placeholder:text-text-muted/60
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/35;
   }
   .label {
     @apply mb-1 block text-xs font-medium text-text-muted;
@@ -99,8 +112,17 @@ body {
 }
 
 /* Thin, unobtrusive scrollbars */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
