@@ -140,10 +140,13 @@ export function AppShell({
             key={href}
             href={href}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium",
+              "relative flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors",
               isActive(href, exact) ? "text-brand-600" : "text-text-muted",
             )}
           >
+            {isActive(href, exact) && (
+              <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-brand-600" />
+            )}
             <Icon className="h-5 w-5" />
             {short}
           </Link>

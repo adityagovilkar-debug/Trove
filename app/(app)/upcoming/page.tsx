@@ -11,6 +11,8 @@ import {
 } from "@/lib/queries";
 import { buildUpcoming, bucketUpcoming, type UpcomingEvent } from "@/lib/upcoming";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
+import { EmptyState } from "@/components/EmptyState";
+import { SkeletonRows } from "@/components/Skeleton";
 
 const KIND = {
   expiry: { icon: Clock, tint: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
@@ -67,15 +69,13 @@ export default function UpcomingPage() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="card h-16 animate-pulse" />
-          ))}
-        </div>
+        <SkeletonRows n={3} height="h-16" />
       ) : total === 0 ? (
-        <div className="card p-10 text-center text-sm text-text-muted">
-          Nothing on the horizon — no expiries, payments or warranties coming up.
-        </div>
+        <EmptyState
+          icon={Clock}
+          title="Nothing on the horizon"
+          hint="No expiries, payments, or warranties coming up. You're all caught up."
+        />
       ) : (
         buckets.map((bucket) => (
           <section key={bucket.label} className="space-y-2">

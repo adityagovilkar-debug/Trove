@@ -25,6 +25,8 @@ import {
 import { SubscriptionDialog } from "@/components/SubscriptionDialog";
 import { cn, formatMoney, formatDate } from "@/lib/utils";
 import type { Subscription } from "@/lib/types";
+import { EmptyState } from "@/components/EmptyState";
+import { Skeleton } from "@/components/Skeleton";
 
 export default function SubscriptionsPage() {
   const { data: subs = [], isLoading } = useSubscriptions();
@@ -81,11 +83,13 @@ export default function SubscriptionsPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="card h-40 animate-pulse" />
+        <Skeleton className="h-40 rounded-2xl" />
       ) : subs.length === 0 ? (
-        <div className="card p-10 text-center text-sm text-text-muted">
-          No subscriptions yet. Add Netflix, your phone plan, gym — anything recurring.
-        </div>
+        <EmptyState
+          icon={CreditCard}
+          title="No subscriptions yet"
+          hint="Track Netflix, your phone plan, gym — anything recurring — to see your monthly burn."
+        />
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[680px] text-sm">

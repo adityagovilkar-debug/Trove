@@ -40,9 +40,20 @@ import { SwipeRow } from "./SwipeRow";
 
 type SortKey = "name" | "totalQty" | "nearestExpiryDays" | "totalValue" | "lastPurchase";
 
+// Distinct full-path location labels across a product's lots.
+function groupLocations(lots: InventoryDetail[], locPaths: Map<string, string>) {
+  const set = new Set<string>();
+  for (const l of lots) {
+    const label = (l.location_id && locPaths.get(l.location_id)) || l.location_name;
+    if (label) set.add(label);
+  }
+  return [...set];
+}
+
 export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
   const products = useMemo(() => groupIntoProducts(rows), [rows]);
   const consume = useConsume();
+  const locPaths = useLocationPaths();
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({
@@ -175,7 +186,7 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                       )}
                     </td>
                     <td className="px-4 py-3 text-text-muted">
-                      {g.locations.length ? g.locations.join(", ") : "—"}
+                      {groupLocations(g.lots, locPaths).join(", ") || "—"}
                     </td>
                     <td className="px-4 py-3">
                       {g.nearestExpiryDays != null ? (
@@ -320,6 +331,8 @@ function ProductCardMobile({
   onEditLot: (lot: InventoryDetail) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const locPaths = useLocationPaths();
+  const locs = groupLocations(g.lots, locPaths);
   const bucket = expiryBucket(g.nearestExpiryDays);
   const multi = g.lotCount > 1;
   return (
@@ -347,10 +360,10 @@ function ProductCardMobile({
                 {g.unit ? ` ${g.unit}` : ""}
               </span>
               {multi && <span>{g.lotCount} lots</span>}
-              {g.locations.length > 0 && (
+              {locs.length > 0 && (
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  {g.locations.join(", ")}
+                  {locs.join(", ")}
                 </span>
               )}
               {g.totalValue > 0 && <span>{formatMoney(g.totalValue, g.currency)}</span>}

@@ -36,7 +36,29 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
+  const [recent, setRecent] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const r = JSON.parse(localStorage.getItem("trove-recent-cmds") || "[]");
+      if (Array.isArray(r)) setRecent(r);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  function recordRecent(id: string) {
+    setRecent((prev) => {
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, 5);
+      try {
+        localStorage.setItem("trove-recent-cmds", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -107,13 +129,25 @@ export function CommandPalette() {
     : actions;
   const { data: stock = [] } = useStockSearch(query);
 
-  // Flattened, navigable list.
+  // Recently used actions (shown when the box is empty).
+  const recentActions = useMemo(
+    () =>
+      q
+        ? []
+        : recent
+            .map((id) => actions.find((a) => a.id === id))
+            .filter((a): a is Action => !!a),
+    [q, recent, actions],
+  );
+
+  // Flattened, navigable list (recent → actions → stock).
   const items = useMemo(
     () => [
+      ...recentActions.map((a) => ({ type: "action" as const, action: a })),
       ...filteredActions.map((a) => ({ type: "action" as const, action: a })),
       ...stock.map((s) => ({ type: "stock" as const, stock: s })),
     ],
-    [filteredActions, stock],
+    [recentActions, filteredActions, stock],
   );
 
   useEffect(() => setSel(0), [query]);
@@ -121,8 +155,10 @@ export function CommandPalette() {
   function run(i: number) {
     const it = items[i];
     if (!it) return;
-    if (it.type === "action") it.action.run();
-    else go("/inventory");
+    if (it.type === "action") {
+      recordRecent(it.action.id);
+      it.action.run();
+    } else go("/inventory");
   }
 
   function onInputKey(e: React.KeyboardEvent) {
@@ -172,9 +208,36 @@ export function CommandPalette() {
             <p className="px-3 py-6 text-center text-sm text-text-muted">No matches.</p>
           )}
 
+          {recentActions.length > 0 && (
+            <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-text-muted">
+              Recent
+            </p>
+          )}
+          {recentActions.map((a) => {
+            idx++;
+            const active = idx === sel;
+            const i = idx;
+            const Icon = a.icon;
+            return (
+              <button
+                key={`recent-${a.id}`}
+                onMouseEnter={() => setSel(i)}
+                onClick={() => run(i)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                  active ? "bg-brand-600 text-white" : "hover:bg-surface-2",
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">{a.label}</span>
+                {active && <CornerDownLeft className="h-3.5 w-3.5 opacity-70" />}
+              </button>
+            );
+          })}
+
           {filteredActions.length > 0 && (
             <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-text-muted">
-              Actions
+              {recentActions.length > 0 ? "Go to" : "Actions"}
             </p>
           )}
           {filteredActions.map((a) => {
@@ -238,6 +301,19 @@ export function CommandPalette() {
               </button>
             );
           })}
+        </div>
+
+        <div className="flex items-center gap-4 border-t px-4 py-2 text-[11px] text-text-muted">
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border px-1">↑</kbd>
+            <kbd className="rounded border px-1">↓</kbd> navigate
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border px-1">↵</kbd> open
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border px-1">esc</kbd> close
+          </span>
         </div>
       </div>
     </div>

@@ -11,6 +11,8 @@ import {
   useClearBought,
 } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/EmptyState";
+import { Skeleton } from "@/components/Skeleton";
 
 const SOURCE_LABEL: Record<string, string> = {
   restock: "predicted",
@@ -66,12 +68,13 @@ export default function ShoppingPage() {
       </form>
 
       {isLoading ? (
-        <div className="card h-32 animate-pulse" />
+        <Skeleton className="h-32 rounded-2xl" />
       ) : items.length === 0 ? (
-        <div className="card p-10 text-center text-sm text-text-muted">
-          Your list is empty. Add items above, or pull in suggestions from the
-          dashboard's “Running low”.
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title="Your list is empty"
+          hint="Add items above, or pull in suggestions from the dashboard's “Running low”. Finished groceries land here automatically."
+        />
       ) : (
         <>
           <div className="card divide-y">

@@ -7,6 +7,9 @@ import { PlusCircle, Search } from "lucide-react";
 import { useInventory, useRefData } from "@/lib/queries";
 import { StockCard } from "@/components/StockCard";
 import { InventoryTable } from "@/components/InventoryTable";
+import { EmptyState } from "@/components/EmptyState";
+import { SkeletonRows } from "@/components/Skeleton";
+import { PackageOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InventoryStatus } from "@/lib/types";
 
@@ -22,7 +25,7 @@ function InventoryInner() {
   const expiringOnly = params.get("filter") === "expiring";
 
   const [status, setStatus] = useState<InventoryStatus | "all">("active");
-  const [domainId, setDomainId] = useState<string | null>(null);
+  const [domainId, setDomainId] = useState<string | null>(params.get("domain"));
   const [search, setSearch] = useState("");
 
   const { data: ref } = useRefData();
@@ -97,15 +100,17 @@ function InventoryInner() {
 
       {/* List */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="card h-[68px] animate-pulse" />
-          ))}
-        </div>
+        <SkeletonRows n={4} />
       ) : visible.length === 0 ? (
-        <div className="card p-10 text-center text-sm text-text-muted">
-          Nothing here. {status === "active" && "Add some stock to get started."}
-        </div>
+        <EmptyState
+          icon={PackageOpen}
+          title="Nothing here"
+          hint={
+            status === "active"
+              ? "Add some stock and it'll show up here, grouped by product."
+              : "Nothing matches this view."
+          }
+        />
       ) : status === "active" ? (
         // Active stock: product-grouped table (sum lots, expand to purchases).
         <InventoryTable rows={visible} />

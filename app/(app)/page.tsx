@@ -108,16 +108,16 @@ export default function DashboardPage() {
   // is grocery-specific; durables (electronics, books) show in the breakdown.
   const byType = useMemo(() => {
     const groups = groupIntoProducts(active);
-    const counts = new Map<string, number>();
+    const counts = new Map<string, { id: string | null; name: string; count: number }>();
     let grocery = 0;
     for (const g of groups) {
-      const name = g.domainName ?? "Other";
-      counts.set(name, (counts.get(name) ?? 0) + 1);
+      const key = g.domainId ?? "none";
+      const cur = counts.get(key) ?? { id: g.domainId, name: g.domainName ?? "Other", count: 0 };
+      cur.count += 1;
+      counts.set(key, cur);
       if (g.domainKey === "grocery") grocery += 1;
     }
-    const list = [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+    const list = [...counts.values()].sort((a, b) => b.count - a.count);
     return { grocery, list, total: groups.length };
   }, [active]);
 
@@ -209,12 +209,13 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-text-muted">By type:</span>
           {byType.list.map((d) => (
-            <span
+            <Link
               key={d.name}
-              className="chip bg-surface-2 text-text-muted ring-border ring-inset"
+              href={d.id ? `/inventory?domain=${d.id}` : "/inventory"}
+              className="chip bg-surface-2 text-text-muted ring-border ring-inset transition-colors hover:text-text"
             >
               {d.name} <span className="font-semibold text-text">{d.count}</span>
-            </span>
+            </Link>
           ))}
         </div>
       )}
