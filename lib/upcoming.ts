@@ -1,7 +1,7 @@
-import type { InventoryDetail, Subscription } from "./types";
+import type { InventoryDetail, Subscription, MealPlanWithRecipe } from "./types";
 import { daysUntil } from "./subscriptions";
 
-export type UpcomingKind = "expiry" | "subscription" | "warranty";
+export type UpcomingKind = "expiry" | "subscription" | "warranty" | "meal";
 
 export interface UpcomingEvent {
   id: string;
@@ -21,8 +21,24 @@ export interface UpcomingEvent {
 export function buildUpcoming(
   inventory: InventoryDetail[],
   subscriptions: Subscription[],
+  meals: MealPlanWithRecipe[] = [],
 ): UpcomingEvent[] {
   const events: UpcomingEvent[] = [];
+
+  for (const m of meals) {
+    const d = daysUntil(m.plan_date);
+    if (d == null) continue;
+    events.push({
+      id: `meal-${m.id}`,
+      kind: "meal",
+      date: m.plan_date,
+      days: d,
+      title: m.recipe_name,
+      subtitle: "Planned meal",
+      amount: null,
+      currency: null,
+    });
+  }
 
   for (const r of inventory) {
     if (r.status !== "active") continue;

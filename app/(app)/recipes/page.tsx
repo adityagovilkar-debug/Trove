@@ -2,17 +2,24 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Clock, Users, ChefHat, CircleCheck } from "lucide-react";
-import { useRecipes, useInventory } from "@/lib/queries";
+import { Plus, Search, Clock, Users, ChefHat, CircleCheck, CalendarClock, X } from "lucide-react";
+import { useRecipes, useInventory, useMealPlans, useDeleteMealPlan } from "@/lib/queries";
 import { buildStockIndex, matchAndSort, totalMinutes } from "@/lib/recipes";
 import { RecipeEditor } from "@/components/RecipeEditor";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonRows } from "@/components/Skeleton";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+
+function dayLabel(d: string) {
+  const days = Math.ceil((new Date(d + "T00:00:00").getTime() - Date.now()) / 86_400_000);
+  return days <= 0 ? "today" : days === 1 ? "tomorrow" : `in ${days}d`;
+}
 
 export default function RecipesPage() {
   const { data: recipes = [], isLoading } = useRecipes();
   const { data: active = [] } = useInventory({ status: "active" });
+  const { data: meals = [] } = useMealPlans();
+  const delMeal = useDeleteMealPlan();
   const [search, setSearch] = useState("");
   const [cookableOnly, setCookableOnly] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -45,6 +52,36 @@ export default function RecipesPage() {
           <span className="hidden sm:inline">New recipe</span>
         </button>
       </div>
+
+      {meals.length > 0 && (
+        <section className="card p-4">
+          <h2 className="mb-2 flex items-center gap-2 font-semibold">
+            <CalendarClock className="h-5 w-5 text-brand-500" />
+            Planned meals
+          </h2>
+          <div className="divide-y">
+            {meals.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <Link href={`/recipes/${m.recipe_id}`} className="truncate font-medium hover:underline">
+                    {m.recipe_name}
+                  </Link>
+                  <p className="text-xs text-text-muted">
+                    {formatDate(m.plan_date)} · {dayLabel(m.plan_date)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => delMeal.mutate(m.id)}
+                  className="btn-ghost px-2 py-1.5 text-text-muted hover:text-rose-500"
+                  aria-label="Remove plan"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {recipes.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">

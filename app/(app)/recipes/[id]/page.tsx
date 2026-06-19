@@ -12,6 +12,8 @@ import {
   ShoppingCart,
   Check,
   Circle,
+  ChefHat,
+  CalendarPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,10 +21,28 @@ import {
   useInventory,
   useDeleteRecipe,
   useAddShoppingItems,
+  useConsume,
+  useAddMealPlan,
 } from "@/lib/queries";
-import { buildStockIndex, matchRecipe, totalMinutes } from "@/lib/recipes";
+import {
+  buildStockIndex,
+  matchRecipe,
+  totalMinutes,
+  findLotForIngredient,
+} from "@/lib/recipes";
 import { RecipeEditor } from "@/components/RecipeEditor";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+
+function isoIn(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function nextWeekendISO() {
+  const d = new Date();
+  d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7)); // upcoming Saturday
+  return d.toISOString().slice(0, 10);
+}
 
 export default function RecipeDetailPage() {
   const params = useParams();
@@ -33,6 +53,8 @@ export default function RecipeDetailPage() {
   const { data: active = [] } = useInventory({ status: "active" });
   const del = useDeleteRecipe();
   const addShopping = useAddShoppingItems();
+  const consume = useConsume();
+  const addMealPlan = useAddMealPlan();
   const [editing, setEditing] = useState(false);
 
   const recipe = recipes.find((r) => r.id === id);
@@ -72,6 +94,42 @@ export default function RecipeDetailPage() {
         router.push("/recipes");
       },
     });
+  }
+
+  // Cooking decrements one of each in-stock ingredient from your stock (FIFO).
+  function cookedIt() {
+    if (!match) return;
+    let used = 0;
+    for (const ing of match.have) {
+      const lot = findLotForIngredient(ing, active);
+      if (lot) {
+        consume.mutate({ id: lot.id, quantity: Number(lot.quantity) });
+        used++;
+      }
+    }
+    toast.success(
+      used ? `Cooked! Used ${used} ingredient${used > 1 ? "s" : ""} from stock.` : "Marked as cooked.",
+    );
+  }
+
+  function planMeal(planDate: string) {
+    if (!recipe) return;
+    const missing = match?.missing ?? [];
+    addMealPlan.mutate(
+      { recipeId: recipe.id, planDate },
+      {
+        onSuccess: () => {
+          if (missing.length)
+            addShopping.mutate(
+              missing.map((i) => ({ name: i.name, itemId: i.item_id, source: "recipe" as const })),
+            );
+          toast.success(
+            `Planned for ${formatDate(planDate)}${missing.length ? ` · ${missing.length} added to list` : ""}`,
+          );
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Couldn't plan"),
+      },
+    );
   }
 
   return (
@@ -127,18 +185,50 @@ export default function RecipeDetailPage() {
               ? "You have everything — ready to cook! 🍳"
               : `You have ${match.haveCount} of ${match.needCount} ingredients.`}
           </span>
-          {!match.canMake && (
-            <button
-              onClick={addMissing}
-              disabled={addShopping.isPending}
-              className="btn-primary px-3 py-1.5 text-xs"
-            >
-              <ShoppingCart className="h-3.5 w-3.5" />
-              Add {match.missing.length} missing to list
+          <div className="flex flex-wrap gap-2">
+            {!match.canMake && (
+              <button
+                onClick={addMissing}
+                disabled={addShopping.isPending}
+                className="btn-outline px-3 py-1.5 text-xs"
+              >
+                <ShoppingCart className="h-3.5 w-3.5" />
+                Add {match.missing.length} missing
+              </button>
+            )}
+            <button onClick={cookedIt} className="btn-primary px-3 py-1.5 text-xs">
+              <ChefHat className="h-3.5 w-3.5" />
+              Cooked it
             </button>
-          )}
+          </div>
         </div>
       )}
+
+      {/* Plan this meal */}
+      <section className="card p-4">
+        <div className="mb-1 flex items-center gap-2">
+          <CalendarPlus className="h-4 w-4 text-brand-500" />
+          <h2 className="font-semibold">Plan this meal</h2>
+        </div>
+        <p className="mb-3 text-xs text-text-muted">
+          We'll add any missing ingredients to your shopping list so you can shop ahead.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => planMeal(isoIn(1))} className="btn-outline px-3 py-1.5 text-sm">
+            Tomorrow
+          </button>
+          <button onClick={() => planMeal(nextWeekendISO())} className="btn-outline px-3 py-1.5 text-sm">
+            This weekend
+          </button>
+          <input
+            type="date"
+            min={isoIn(0)}
+            onChange={(e) => e.target.value && planMeal(e.target.value)}
+            className="input max-w-[170px]"
+            aria-label="Pick a date"
+          />
+        </div>
+      </section>
 
       {/* Ingredients */}
       <section className="card p-5">

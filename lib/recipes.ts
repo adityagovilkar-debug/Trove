@@ -81,6 +81,29 @@ export function matchAndSort(
     });
 }
 
+// The active stock lot to draw from for an ingredient when you cook a recipe:
+// matched by item id or name, FIFO (soonest expiry, then oldest purchase).
+export function findLotForIngredient(
+  ing: RecipeIngredient,
+  active: InventoryDetail[],
+): InventoryDetail | undefined {
+  const n = norm(ing.name);
+  const matches = active.filter((r) => {
+    if (ing.item_id && r.item_id === ing.item_id) return true;
+    const p = norm(r.item_name);
+    return p === n || p.includes(n) || n.includes(p);
+  });
+  matches.sort((a, b) => {
+    const ax = a.days_to_expiry;
+    const bx = b.days_to_expiry;
+    if (ax == null && bx == null) return a.purchase_date.localeCompare(b.purchase_date);
+    if (ax == null) return 1;
+    if (bx == null) return -1;
+    return ax - bx;
+  });
+  return matches[0];
+}
+
 export function totalMinutes(r: { prep_minutes: number | null; cook_minutes: number | null }) {
   const t = (r.prep_minutes ?? 0) + (r.cook_minutes ?? 0);
   return t > 0 ? t : null;

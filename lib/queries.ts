@@ -22,6 +22,7 @@ import type {
   Recipe,
   RecipeIngredient,
   RecipeWithIngredients,
+  MealPlanWithRecipe,
 } from "@/lib/types";
 import { advancePayment } from "@/lib/subscriptions";
 import { buildPathMap } from "@/lib/locations";
@@ -672,35 +673,53 @@ export function useAddShoppingItems() {
   return useMutation({
     mutationFn: async (inputs: ShoppingInput[]) => {
       const sb = supabaseBrowser();
-      const rows = inputs.map((i) => ({
-        household_id: householdId,
-        name: i.name,
-        note: i.note ?? null,
-        quantity: i.quantity ?? null,
-        unit: i.unit ?? null,
-        item_id: i.itemId ?? null,
-        source: i.source ?? "manual",
-      }));
+      // Skip anything already on the pending list (no duplicates).
+      const { data: existing } = await sb
+        .from("shopping_list_items")
+        .select("name")
+        .eq("household_id", householdId!)
+        .eq("is_bought", false);
+      const have = new Set((existing ?? []).map((e) => e.name.trim().toLowerCase()));
+      const rows = inputs
+        .filter((i) => !have.has(i.name.trim().toLowerCase()))
+        .map((i) => ({
+          household_id: householdId,
+          name: i.name,
+          note: i.note ?? null,
+          quantity: i.quantity ?? null,
+          unit: i.unit ?? null,
+          item_id: i.itemId ?? null,
+          source: i.source ?? "manual",
+        }));
+      if (rows.length === 0) return;
       const { error } = await sb.from("shopping_list_items").insert(rows);
       if (error) throw error;
     },
     onMutate: async (inputs) => {
       await qc.cancelQueries({ queryKey: ["shopping"] });
       const snap = qc.getQueriesData({ queryKey: ["shopping"] }) as Snapshot;
+      // Don't optimistically add anything already pending.
+      const have = new Set<string>();
+      for (const [, data] of snap)
+        (data as ShoppingItem[] | undefined)?.forEach((s) => {
+          if (!s.is_bought) have.add(s.name.trim().toLowerCase());
+        });
       const now = new Date().toISOString();
-      const temp: ShoppingItem[] = inputs.map((i, idx) => ({
-        id: `temp-${Date.now()}-${idx}`,
-        household_id: householdId ?? "",
-        name: i.name,
-        note: i.note ?? null,
-        quantity: i.quantity ?? null,
-        unit: i.unit ?? null,
-        item_id: i.itemId ?? null,
-        source: i.source ?? "manual",
-        is_bought: false,
-        bought_at: null,
-        created_at: now,
-      }));
+      const temp: ShoppingItem[] = inputs
+        .filter((i) => !have.has(i.name.trim().toLowerCase()))
+        .map((i, idx) => ({
+          id: `temp-${Date.now()}-${idx}`,
+          household_id: householdId ?? "",
+          name: i.name,
+          note: i.note ?? null,
+          quantity: i.quantity ?? null,
+          unit: i.unit ?? null,
+          item_id: i.itemId ?? null,
+          source: i.source ?? "manual",
+          is_bought: false,
+          bought_at: null,
+          created_at: now,
+        }));
       qc.setQueriesData<ShoppingItem[]>({ queryKey: ["shopping"] }, (old) => [
         ...temp,
         ...(old ?? []),
@@ -887,5 +906,69 @@ export function useDeleteRecipe() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Meal plans
+// ---------------------------------------------------------------------------
+export function useMealPlans() {
+  const { data: householdId } = useHouseholdId();
+  return useQuery({
+    queryKey: ["meal-plans", householdId],
+    enabled: !!householdId,
+    queryFn: async (): Promise<MealPlanWithRecipe[]> => {
+      const sb = supabaseBrowser();
+      const today = new Date().toISOString().slice(0, 10);
+      const { data, error } = await sb
+        .from("meal_plans")
+        .select("*, recipes(name)")
+        .eq("household_id", householdId!)
+        .gte("plan_date", today)
+        .order("plan_date");
+      if (error) throw error;
+      return (data ?? []).map(
+        (m: MealPlanWithRecipe & { recipes?: { name: string } | null }) => ({
+          ...m,
+          recipe_name: m.recipes?.name ?? "Recipe",
+        }),
+      );
+    },
+  });
+}
+
+export interface MealPlanInput {
+  recipeId: string;
+  planDate: string;
+  note?: string | null;
+}
+
+export function useAddMealPlan() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async (input: MealPlanInput) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("meal_plans").insert({
+        household_id: householdId,
+        recipe_id: input.recipeId,
+        plan_date: input.planDate,
+        note: input.note ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["meal-plans"] }),
+  });
+}
+
+export function useDeleteMealPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("meal_plans").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["meal-plans"] }),
   });
 }

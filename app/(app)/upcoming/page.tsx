@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { Clock, CreditCard, ShieldCheck, Check, Minus } from "lucide-react";
+import { Clock, CreditCard, ShieldCheck, ChefHat, Check, Minus } from "lucide-react";
 import { toast } from "sonner";
 import {
   useInventory,
   useSubscriptions,
+  useMealPlans,
   useConsume,
   useMarkSubscriptionPaid,
 } from "@/lib/queries";
@@ -18,6 +19,7 @@ const KIND = {
   expiry: { icon: Clock, tint: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
   subscription: { icon: CreditCard, tint: "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300" },
   warranty: { icon: ShieldCheck, tint: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300" },
+  meal: { icon: ChefHat, tint: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
 } as const;
 
 function dueLabel(days: number) {
@@ -36,12 +38,13 @@ function dueColor(days: number) {
 export default function UpcomingPage() {
   const { data: inventory = [], isLoading: li } = useInventory({ status: "active" });
   const { data: subs = [], isLoading: ls } = useSubscriptions();
+  const { data: meals = [] } = useMealPlans();
   const consume = useConsume();
   const markPaid = useMarkSubscriptionPaid();
 
   const buckets = useMemo(
-    () => bucketUpcoming(buildUpcoming(inventory, subs)),
-    [inventory, subs],
+    () => bucketUpcoming(buildUpcoming(inventory, subs, meals)),
+    [inventory, subs, meals],
   );
   const isLoading = li || ls;
   const total = buckets.reduce((n, b) => n + b.events.length, 0);

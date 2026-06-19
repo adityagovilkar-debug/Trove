@@ -162,6 +162,19 @@ export interface RecipeWithIngredients extends Recipe {
   ingredients: RecipeIngredient[];
 }
 
+export interface MealPlan {
+  id: string;
+  household_id: string;
+  recipe_id: string;
+  plan_date: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface MealPlanWithRecipe extends MealPlan {
+  recipe_name: string;
+}
+
 // Reference data bundled together for forms/filters.
 export interface RefData {
   household: Household;
