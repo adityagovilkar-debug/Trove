@@ -33,6 +33,9 @@ import {
 import { RecipeEditor } from "@/components/RecipeEditor";
 import { cn, formatDate } from "@/lib/utils";
 
+function fmtQty(n: number) {
+  return String(Math.round(n * 100) / 100);
+}
 function isoIn(days: number) {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -56,6 +59,7 @@ export default function RecipeDetailPage() {
   const consume = useConsume();
   const addMealPlan = useAddMealPlan();
   const [editing, setEditing] = useState(false);
+  const [target, setTarget] = useState<number | null>(null); // scaled servings
 
   const recipe = recipes.find((r) => r.id === id);
   const stock = useMemo(() => buildStockIndex(active), [active]);
@@ -76,15 +80,29 @@ export default function RecipeDetailPage() {
   const mins = totalMinutes(recipe);
   const inStock = (ingId: string) => match?.have.some((h) => h.id === ingId);
 
+  // Servings scaling: multiply ingredient quantities by target / base servings.
+  const hasServings = recipe.servings != null && recipe.servings > 0;
+  const base = hasServings ? recipe.servings! : 1;
+  const effectiveTarget = target ?? base;
+  const factor = effectiveTarget / base;
+
+  // Missing ingredients as shopping inputs, scaled to the chosen servings.
+  function missingInputs() {
+    return (match?.missing ?? []).map((i) => ({
+      name: i.name,
+      quantity: i.quantity != null ? Math.round(i.quantity * factor * 100) / 100 : null,
+      unit: i.unit,
+      itemId: i.item_id,
+      source: "recipe" as const,
+    }));
+  }
+
   function addMissing() {
-    if (!match || match.missing.length === 0) return;
-    addShopping.mutate(
-      match.missing.map((i) => ({ name: i.name, itemId: i.item_id, source: "recipe" as const })),
-      {
-        onSuccess: () =>
-          toast.success(`Added ${match.missing.length} ingredient(s) to your shopping list`),
-      },
-    );
+    const inputs = missingInputs();
+    if (inputs.length === 0) return;
+    addShopping.mutate(inputs, {
+      onSuccess: () => toast.success(`Added ${inputs.length} ingredient(s) to your shopping list`),
+    });
   }
 
   function remove() {
@@ -119,10 +137,7 @@ export default function RecipeDetailPage() {
       { recipeId: recipe.id, planDate },
       {
         onSuccess: () => {
-          if (missing.length)
-            addShopping.mutate(
-              missing.map((i) => ({ name: i.name, itemId: i.item_id, source: "recipe" as const })),
-            );
+          if (missing.length) addShopping.mutate(missingInputs());
           toast.success(
             `Planned for ${formatDate(planDate)}${missing.length ? ` · ${missing.length} added to list` : ""}`,
           );
@@ -232,7 +247,32 @@ export default function RecipeDetailPage() {
 
       {/* Ingredients */}
       <section className="card p-5">
-        <h2 className="mb-3 font-semibold">Ingredients</h2>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="font-semibold">Ingredients</h2>
+          {recipe.ingredients.some((i) => i.quantity != null) && (
+            <div className="flex items-center gap-1 text-sm">
+              <button
+                type="button"
+                onClick={() => setTarget(Math.max(1, effectiveTarget - 1))}
+                className="btn-ghost px-2 py-1"
+                aria-label="Scale down"
+              >
+                −
+              </button>
+              <span className="min-w-[78px] text-center text-xs font-medium">
+                {hasServings ? `Serves ${effectiveTarget}` : `${effectiveTarget}× batch`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTarget(effectiveTarget + 1)}
+                className="btn-ghost px-2 py-1"
+                aria-label="Scale up"
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
         <ul className="space-y-2">
           {recipe.ingredients.map((ing) => {
             const have = ing.optional ? null : inStock(ing.id);
@@ -246,7 +286,12 @@ export default function RecipeDetailPage() {
                   <Circle className="h-4 w-4 shrink-0 text-amber-500" />
                 )}
                 <span className={cn("flex-1", have === false && "text-text")}>
-                  {ing.quantity != null && <span className="text-text-muted">{ing.quantity}{ing.unit ? ` ${ing.unit}` : ""} </span>}
+                  {ing.quantity != null && (
+                    <span className="text-text-muted">
+                      {fmtQty(ing.quantity * factor)}
+                      {ing.unit ? ` ${ing.unit}` : ""}{" "}
+                    </span>
+                  )}
                   {ing.name}
                   {ing.optional && <span className="ml-1 text-xs text-text-muted">(optional)</span>}
                 </span>

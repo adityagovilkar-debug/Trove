@@ -159,11 +159,13 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                 <FragmentRows key={g.key}>
                   <tr className="border-b hover:bg-surface-2/50">
                     <td className="px-2 py-3">
-                      {g.lotCount > 1 ? (
-                        <button onClick={() => toggle(g.key)} className="rounded p-1 hover:bg-surface-2" aria-label="Expand">
-                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </button>
-                      ) : null}
+                      <button
+                        onClick={() => toggle(g.key)}
+                        className="rounded p-1 hover:bg-surface-2"
+                        aria-label={isOpen ? "Collapse" : "Expand to edit purchases"}
+                      >
+                        {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -342,7 +344,7 @@ function ProductCardMobile({
     >
       <div className="card p-3">
         <button
-          onClick={() => multi && setOpen((o) => !o)}
+          onClick={() => setOpen((o) => !o)}
           className="flex w-full items-center gap-3 text-left"
         >
           <div className="min-w-0 flex-1">
@@ -374,12 +376,11 @@ function ProductCardMobile({
               {expiryLabel(g.nearestExpiryDays)}
             </span>
           )}
-          {multi &&
-            (open ? (
-              <ChevronDown className="h-4 w-4 shrink-0 text-text-muted" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0 text-text-muted" />
-            ))}
+          {open ? (
+            <ChevronDown className="h-4 w-4 shrink-0 text-text-muted" />
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0 text-text-muted" />
+          )}
         </button>
 
         {open && (
