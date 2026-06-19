@@ -115,10 +115,17 @@ export default function RecipeDetailPage() {
   }
 
   // Cooking decrements one of each in-stock ingredient from your stock (FIFO).
+  // Pantry staples (oil, masala, rice…) are skipped — you mark those finished
+  // yourself when they actually run out.
   function cookedIt() {
     if (!match) return;
     let used = 0;
+    let kept = 0;
     for (const ing of match.have) {
+      if (ing.staple) {
+        kept++;
+        continue;
+      }
       const lot = findLotForIngredient(ing, active);
       if (lot) {
         consume.mutate({ id: lot.id, quantity: Number(lot.quantity) });
@@ -126,7 +133,9 @@ export default function RecipeDetailPage() {
       }
     }
     toast.success(
-      used ? `Cooked! Used ${used} ingredient${used > 1 ? "s" : ""} from stock.` : "Marked as cooked.",
+      used
+        ? `Cooked! Used ${used} ingredient${used > 1 ? "s" : ""} from stock${kept ? `, kept ${kept} pantry staple${kept > 1 ? "s" : ""}` : ""}.`
+        : "Marked as cooked.",
     );
   }
 
@@ -294,6 +303,11 @@ export default function RecipeDetailPage() {
                   )}
                   {ing.name}
                   {ing.optional && <span className="ml-1 text-xs text-text-muted">(optional)</span>}
+                  {ing.staple && (
+                    <span className="ml-1.5 rounded-full bg-surface px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-muted ring-1 ring-inset ring-border">
+                      pantry
+                    </span>
+                  )}
                 </span>
                 {have === false && <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">need</span>}
               </li>

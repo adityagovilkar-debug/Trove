@@ -834,6 +834,7 @@ export interface RecipeIngredientInput {
   unit?: string | null;
   itemId?: string | null;
   optional?: boolean;
+  staple?: boolean;
 }
 
 export interface RecipeInput {
@@ -885,6 +886,7 @@ export function useUpsertRecipe() {
           unit: i.unit ?? null,
           item_id: i.itemId ?? null,
           optional: i.optional ?? false,
+          staple: i.staple ?? false,
           sort_order: idx,
         }));
       if (rows.length) {

@@ -11,6 +11,7 @@ interface IngRow {
   quantity: string;
   unit: string;
   optional: boolean;
+  staple: boolean;
 }
 
 export function RecipeEditor({
@@ -38,15 +39,16 @@ export function RecipeEditor({
           quantity: i.quantity != null ? String(i.quantity) : "",
           unit: i.unit ?? "",
           optional: i.optional,
+          staple: i.staple,
         }))
-      : [{ name: "", quantity: "", unit: "", optional: false }],
+      : [{ name: "", quantity: "", unit: "", optional: false, staple: false }],
   );
 
   function setRow(i: number, patch: Partial<IngRow>) {
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
   }
   function addRow() {
-    setRows((r) => [...r, { name: "", quantity: "", unit: "", optional: false }]);
+    setRows((r) => [...r, { name: "", quantity: "", unit: "", optional: false, staple: false }]);
   }
   function removeRow(i: number) {
     setRows((r) => (r.length > 1 ? r.filter((_, idx) => idx !== i) : r));
@@ -72,6 +74,7 @@ export function RecipeEditor({
             quantity: r.quantity ? Number(r.quantity) : null,
             unit: r.unit.trim() || null,
             optional: r.optional,
+            staple: r.staple,
           })),
       },
       {
@@ -129,7 +132,7 @@ export function RecipeEditor({
           <div className="card space-y-2 p-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Ingredients</p>
-              <span className="text-xs text-text-muted">tick “opt.” for non-essential</span>
+              <span className="text-xs text-text-muted">“opt.” = non-essential · “pantry” = never auto-used</span>
             </div>
             {rows.map((row, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -152,6 +155,18 @@ export function RecipeEditor({
                   onChange={(e) => setRow(i, { unit: e.target.value })}
                   placeholder="unit"
                 />
+                <label
+                  className="flex shrink-0 items-center gap-1 text-xs text-text-muted"
+                  title="Pantry staple — never auto-deducted when you cook (e.g. oil, masala, rice)"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-brand-600"
+                    checked={row.staple}
+                    onChange={(e) => setRow(i, { staple: e.target.checked })}
+                  />
+                  pantry
+                </label>
                 <label className="flex shrink-0 items-center gap-1 text-xs text-text-muted">
                   <input
                     type="checkbox"

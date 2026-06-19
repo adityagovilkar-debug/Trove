@@ -139,6 +139,7 @@ export interface RecipeIngredient {
   unit: string | null;
   item_id: string | null;
   optional: boolean;
+  staple: boolean; // pantry staple — not auto-deducted when you cook the recipe
   sort_order: number;
 }
 
