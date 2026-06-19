@@ -13,6 +13,7 @@ import {
   CalendarClock,
   Command,
   ShoppingCart,
+  ChefHat,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -25,8 +26,9 @@ const NAV = [
   { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
   { href: "/upcoming", label: "Upcoming", short: "Soon", icon: CalendarClock, mobile: true },
   { href: "/inventory", label: "Inventory", short: "Stock", icon: Boxes, mobile: true },
+  { href: "/recipes", label: "Recipes", short: "Cook", icon: ChefHat, mobile: true },
   { href: "/shopping", label: "Shopping", short: "List", icon: ShoppingCart, mobile: true },
-  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: true },
+  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: false },
   { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: false },
   { href: "/trends", label: "Trends", short: "Trends", icon: LineChart, mobile: false },
   { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },

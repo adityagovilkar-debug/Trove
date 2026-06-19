@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/Skeleton";
 const SOURCE_LABEL: Record<string, string> = {
   restock: "predicted",
   finished: "ran out",
+  recipe: "for a recipe",
   manual: "",
 };
 

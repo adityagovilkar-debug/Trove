@@ -19,6 +19,9 @@ import type {
   Store,
   Subscription,
   ShoppingItem,
+  Recipe,
+  RecipeIngredient,
+  RecipeWithIngredients,
 } from "@/lib/types";
 import { advancePayment } from "@/lib/subscriptions";
 import { buildPathMap } from "@/lib/locations";
@@ -772,5 +775,117 @@ export function useClearBought() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shopping"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Recipes
+// ---------------------------------------------------------------------------
+export function useRecipes() {
+  const { data: householdId } = useHouseholdId();
+  return useQuery({
+    queryKey: ["recipes", householdId],
+    enabled: !!householdId,
+    queryFn: async (): Promise<RecipeWithIngredients[]> => {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb
+        .from("recipes")
+        .select("*, recipe_ingredients(*)")
+        .eq("household_id", householdId!)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []).map((r: Recipe & { recipe_ingredients?: RecipeIngredient[] }) => ({
+        ...r,
+        ingredients: (r.recipe_ingredients ?? []).sort(
+          (a, b) => a.sort_order - b.sort_order,
+        ),
+      })) as RecipeWithIngredients[];
+    },
+  });
+}
+
+export function useRecipe(id: string | undefined) {
+  const { data: all } = useRecipes();
+  return useMemo(() => all?.find((r) => r.id === id), [all, id]);
+}
+
+export interface RecipeIngredientInput {
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  itemId?: string | null;
+  optional?: boolean;
+}
+
+export interface RecipeInput {
+  id?: string;
+  name: string;
+  description?: string | null;
+  instructions?: string | null;
+  servings?: number | null;
+  prepMinutes?: number | null;
+  cookMinutes?: number | null;
+  category?: string | null;
+  ingredients: RecipeIngredientInput[];
+}
+
+export function useUpsertRecipe() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async (input: RecipeInput): Promise<string> => {
+      const sb = supabaseBrowser();
+      const payload = {
+        household_id: householdId,
+        name: input.name,
+        description: input.description ?? null,
+        instructions: input.instructions ?? null,
+        servings: input.servings ?? null,
+        prep_minutes: input.prepMinutes ?? null,
+        cook_minutes: input.cookMinutes ?? null,
+        category: input.category ?? null,
+      };
+      let recipeId = input.id;
+      if (recipeId) {
+        const { error } = await sb.from("recipes").update(payload).eq("id", recipeId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await sb.from("recipes").insert(payload).select("id").single();
+        if (error) throw error;
+        recipeId = data.id as string;
+      }
+      // Replace the ingredient set.
+      await sb.from("recipe_ingredients").delete().eq("recipe_id", recipeId);
+      const rows = input.ingredients
+        .filter((i) => i.name.trim())
+        .map((i, idx) => ({
+          recipe_id: recipeId,
+          household_id: householdId,
+          name: i.name.trim(),
+          quantity: i.quantity ?? null,
+          unit: i.unit ?? null,
+          item_id: i.itemId ?? null,
+          optional: i.optional ?? false,
+          sort_order: idx,
+        }));
+      if (rows.length) {
+        const { error } = await sb.from("recipe_ingredients").insert(rows);
+        if (error) throw error;
+      }
+      return recipeId;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
+  });
+}
+
+export function useDeleteRecipe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("recipes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
   });
 }

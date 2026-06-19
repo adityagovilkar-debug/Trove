@@ -124,10 +124,42 @@ export interface ShoppingItem {
   quantity: number | null;
   unit: string | null;
   item_id: string | null;
-  source: "manual" | "restock" | "finished";
+  source: "manual" | "restock" | "finished" | "recipe";
   is_bought: boolean;
   bought_at: string | null;
   created_at: string;
+}
+
+export interface RecipeIngredient {
+  id: string;
+  recipe_id: string;
+  household_id: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  item_id: string | null;
+  optional: boolean;
+  sort_order: number;
+}
+
+export interface Recipe {
+  id: string;
+  household_id: string;
+  name: string;
+  description: string | null;
+  instructions: string | null;
+  servings: number | null;
+  prep_minutes: number | null;
+  cook_minutes: number | null;
+  category: string | null;
+  image_url: string | null;
+  source: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecipeWithIngredients extends Recipe {
+  ingredients: RecipeIngredient[];
 }
 
 // Reference data bundled together for forms/filters.
