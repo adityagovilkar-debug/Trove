@@ -51,9 +51,16 @@ function groupLocations(lots: InventoryDetail[], locPaths: Map<string, string>) 
 }
 
 export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
-  const products = useMemo(() => groupIntoProducts(rows), [rows]);
+  const [byBrand, setByBrand] = useState(false);
+  const products = useMemo(() => groupIntoProducts(rows, { byBrand }), [rows, byBrand]);
   const consume = useConsume();
   const locPaths = useLocationPaths();
+
+  // Only worth offering the split if at least one product actually blends brands.
+  const hasBrandBlend = useMemo(
+    () => groupIntoProducts(rows).some((g) => g.brands.length > 1),
+    [rows],
+  );
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({
@@ -123,6 +130,29 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
         <AddPurchaseDialog product={purchaseFor} onClose={() => setPurchaseFor(null)} />
       )}
 
+      {/* Grouping toggle — only when something actually blends brands. */}
+      {hasBrandBlend && (
+        <div className="mb-3 flex items-center justify-end">
+          <div className="flex rounded-lg bg-surface-2 p-0.5 text-xs">
+            {[
+              [false, "Rollup"],
+              [true, "By brand"],
+            ].map(([val, lbl]) => (
+              <button
+                key={String(val)}
+                onClick={() => setByBrand(val as boolean)}
+                className={cn(
+                  "rounded-md px-2.5 py-1 font-medium transition-colors",
+                  byBrand === val ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+                )}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mobile: swipeable product cards (swipe → Use 1 / Buy again) */}
       <div className="space-y-2 md:hidden">
         {sorted.map((g) => (
@@ -176,7 +206,9 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                           </span>
                         )}
                       </div>
-                      {g.brand && <div className="text-xs text-text-muted">{g.brand}</div>}
+                      {g.brands.length > 0 && (
+                        <div className="text-xs text-text-muted">{g.brands.join(" · ")}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-medium">
@@ -356,6 +388,9 @@ function ProductCardMobile({
                 </span>
               )}
             </div>
+            {g.brands.length > 0 && (
+              <div className="mt-0.5 truncate text-xs text-text-muted">{g.brands.join(" · ")}</div>
+            )}
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
               <span className="font-medium text-text">
                 {g.totalQty}

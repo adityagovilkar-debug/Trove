@@ -74,6 +74,7 @@ export function spendBetween(lots: InventoryDetail[], start: string, end: string
 export interface PriceTrend {
   key: string;
   name: string;
+  brand: string | null;
   unit: string | null;
   currency: string;
   series: { date: string; ts: number; unit: number }[];
@@ -84,13 +85,15 @@ export interface PriceTrend {
   buys: number;
 }
 
-// Per-product unit-price history. Only products with ≥2 priced purchases (you
-// need at least two points for a trend). This powers the price-tracker table.
+// Per-product unit-price history. Brand is part of the key, so Lays and Balaji
+// chips track as separate lines (mixing them would muddy the per-unit price).
+// Only products with ≥2 priced purchases (you need two points for a trend).
+// This powers the price-tracker table.
 export function priceTrends(lots: InventoryDetail[]): PriceTrend[] {
   const groups = new Map<string, InventoryDetail[]>();
   for (const l of lots) {
     if (l.price == null || Number(l.quantity) <= 0) continue;
-    const key = `${l.item_name.trim().toLowerCase()}|${l.domain_id ?? ""}`;
+    const key = `${l.item_name.trim().toLowerCase()}|${(l.item_brand ?? "").trim().toLowerCase()}|${l.domain_id ?? ""}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(l);
   }
@@ -110,6 +113,7 @@ export function priceTrends(lots: InventoryDetail[]): PriceTrend[] {
     out.push({
       key,
       name: ls[0].item_name,
+      brand: ls[0].item_brand,
       unit: ls[0].unit,
       currency: ls[0].currency,
       series,
@@ -133,11 +137,12 @@ export function basketInflation(trends: PriceTrend[]): number | null {
 }
 
 // Rebuy frequency: how many times and how often each product is purchased.
+// Brand-aware so the same dish name from two brands doesn't merge.
 export function rebuyFrequency(lots: InventoryDetail[]) {
-  const m = new Map<string, { name: string; dates: string[] }>();
+  const m = new Map<string, { key: string; name: string; brand: string | null; dates: string[] }>();
   for (const l of lots) {
-    const k = l.item_name.toLowerCase();
-    if (!m.has(k)) m.set(k, { name: l.item_name, dates: [] });
+    const k = `${l.item_name.toLowerCase()}|${(l.item_brand ?? "").trim().toLowerCase()}`;
+    if (!m.has(k)) m.set(k, { key: k, name: l.item_name, brand: l.item_brand, dates: [] });
     m.get(k)!.dates.push(l.purchase_date);
   }
   return [...m.values()]
@@ -150,7 +155,7 @@ export function rebuyFrequency(lots: InventoryDetail[]) {
           t += (+new Date(d[i]) - +new Date(d[i - 1])) / 86_400_000;
         avg = Math.round(t / (d.length - 1));
       }
-      return { name: v.name, count: d.length, avgGap: avg };
+      return { key: v.key, name: v.name, brand: v.brand, count: d.length, avgGap: avg };
     })
     .sort((a, b) => b.count - a.count);
 }

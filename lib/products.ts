@@ -6,7 +6,8 @@ export interface ProductGroup {
   key: string;
   itemId: string; // representative item id (for "add another purchase")
   name: string;
-  brand: string | null;
+  brand: string | null; // single brand, or null when the group blends brands
+  brands: string[]; // every distinct brand in the group (for "Lays · Balaji")
   domainId: string | null;
   domainName: string | null;
   domainKey: string | null;
@@ -23,13 +24,21 @@ export interface ProductGroup {
   lots: InventoryDetail[]; // individual purchases, soonest-to-expire first
 }
 
-// Group lots by product (normalized name + domain), so pre-existing duplicate
-// items merge too, not just future de-duplicated ones.
-export function groupIntoProducts(rows: InventoryDetail[]): ProductGroup[] {
+// Group lots by product, so pre-existing duplicate items merge too, not just
+// future de-duplicated ones. By default groups on normalized name + domain
+// (the coarse "do I have chips?" rollup). With { byBrand } the brand joins the
+// key, so Lays and Balaji potato chips become separate products — the right
+// granularity for price/trend comparison.
+export function groupIntoProducts(
+  rows: InventoryDetail[],
+  opts: { byBrand?: boolean } = {},
+): ProductGroup[] {
+  const { byBrand = false } = opts;
   const map = new Map<string, ProductGroup>();
 
   for (const r of rows) {
-    const key = `${r.item_name.trim().toLowerCase()}|${r.domain_id ?? ""}`;
+    const base = `${r.item_name.trim().toLowerCase()}|${r.domain_id ?? ""}`;
+    const key = byBrand ? `${base}|${(r.item_brand ?? "").trim().toLowerCase()}` : base;
     let g = map.get(key);
     if (!g) {
       g = {
@@ -37,6 +46,7 @@ export function groupIntoProducts(rows: InventoryDetail[]): ProductGroup[] {
         itemId: r.item_id,
         name: r.item_name,
         brand: r.item_brand,
+        brands: [],
         domainId: r.domain_id,
         domainName: r.domain_name,
         domainKey: r.domain_key,
@@ -54,6 +64,7 @@ export function groupIntoProducts(rows: InventoryDetail[]): ProductGroup[] {
       };
       map.set(key, g);
     }
+    if (r.item_brand && !g.brands.includes(r.item_brand)) g.brands.push(r.item_brand);
     g.totalQty += Number(r.quantity) || 0;
     g.lotCount += 1;
     g.totalValue += Number(r.price ?? 0);
@@ -69,8 +80,12 @@ export function groupIntoProducts(rows: InventoryDetail[]): ProductGroup[] {
     g.lots.push(r);
   }
 
-  // Sort each product's lots soonest-to-expire first (nulls last), then oldest.
   for (const g of map.values()) {
+    // Don't misattribute one brand to a row that actually blends several.
+    if (g.brands.length > 1) g.brand = null;
+    else if (g.brands.length === 1) g.brand = g.brands[0];
+
+    // Sort each product's lots soonest-to-expire first (nulls last), then oldest.
     g.lots.sort((a, b) => {
       const ax = a.days_to_expiry,
         bx = b.days_to_expiry;

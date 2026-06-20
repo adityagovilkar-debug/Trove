@@ -257,6 +257,7 @@ export default function TrendsPage() {
                     )}
                     <span className="min-w-0 flex-1 truncate font-medium">
                       {t.name}
+                      {t.brand && <span className="font-normal text-text-muted"> · {t.brand}</span>}
                       {t.unit && <span className="text-text-muted"> · /{t.unit}</span>}
                     </span>
                     <span className="shrink-0 text-sm">{formatMoney(t.last, currency)}</span>
@@ -312,7 +313,11 @@ export default function TrendsPage() {
         )}
         {biggestMover && (
           <p className="mt-3 text-xs text-text-muted">
-            Biggest mover: <span className="font-medium text-text">{biggestMover.name}</span>{" "}
+            Biggest mover:{" "}
+            <span className="font-medium text-text">
+              {biggestMover.name}
+              {biggestMover.brand ? ` · ${biggestMover.brand}` : ""}
+            </span>{" "}
             {biggestMover.changePct > 0 ? "+" : ""}
             {biggestMover.changePct}%
           </p>
@@ -333,8 +338,11 @@ export default function TrendsPage() {
         ) : (
           <ul className="space-y-2">
             {rebuy.slice(0, 8).map((r) => (
-              <li key={r.name} className="flex items-center justify-between gap-3 text-sm">
-                <span className="truncate font-medium">{r.name}</span>
+              <li key={r.key} className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate font-medium">
+                  {r.name}
+                  {r.brand && <span className="font-normal text-text-muted"> · {r.brand}</span>}
+                </span>
                 <span className="shrink-0 text-text-muted">
                   {r.count}×{r.avgGap != null && <span className="ml-2 text-xs">~every {r.avgGap}d</span>}
                 </span>
