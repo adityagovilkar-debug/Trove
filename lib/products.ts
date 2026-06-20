@@ -1,5 +1,31 @@
 import type { InventoryDetail } from "./types";
 
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+// Pack breakdown for a single lot, e.g. "4 × 50 g", or null when the lot has
+// no pack size (caller falls back to plain quantity + unit).
+export function packLabel(r: {
+  quantity: number;
+  pack_size: number | null;
+  pack_size_unit: string | null;
+}): string | null {
+  if (r.pack_size == null) return null;
+  const size = `${round2(Number(r.pack_size))}${r.pack_size_unit ? ` ${r.pack_size_unit}` : ""}`;
+  return `${round2(Number(r.quantity))} × ${size}`;
+}
+
+// Total content of a single lot, e.g. "200 g", or null when no pack size/unit.
+export function packTotal(r: {
+  quantity: number;
+  pack_size: number | null;
+  pack_size_unit: string | null;
+}): string | null {
+  if (r.pack_size == null || !r.pack_size_unit) return null;
+  return `${round2(Number(r.quantity) * Number(r.pack_size))} ${r.pack_size_unit}`;
+}
+
 // A product groups one or more purchase *lots* of the same thing, so you can
 // see total stock on hand while still drilling into each purchase.
 export interface ProductGroup {
@@ -14,6 +40,7 @@ export interface ProductGroup {
   categoryName: string | null;
   totalQty: number;
   unit: string | null;
+  contentLabel: string | null; // total pack content, e.g. "200 g" (null if no/mixed pack info)
   lotCount: number;
   nearestExpiryDays: number | null;
   totalValue: number;
@@ -53,6 +80,7 @@ export function groupIntoProducts(
         categoryName: r.category_name,
         totalQty: 0,
         unit: r.unit,
+        contentLabel: null,
         lotCount: 0,
         nearestExpiryDays: null,
         totalValue: 0,
@@ -84,6 +112,21 @@ export function groupIntoProducts(
     // Don't misattribute one brand to a row that actually blends several.
     if (g.brands.length > 1) g.brand = null;
     else if (g.brands.length === 1) g.brand = g.brands[0];
+
+    // Roll up total pack content when every lot is packed and shares a unit
+    // (e.g. 4×50 g + 2×50 g → "300 g"). Mixed/absent pack info → no label.
+    const packed = g.lots.filter((l) => l.pack_size != null);
+    if (packed.length === g.lots.length && packed.length > 0) {
+      const units = new Set(packed.map((l) => l.pack_size_unit ?? ""));
+      if (units.size === 1) {
+        const total = packed.reduce(
+          (s, l) => s + Number(l.quantity) * Number(l.pack_size),
+          0,
+        );
+        const u = packed[0].pack_size_unit;
+        g.contentLabel = `${round2(total)}${u ? ` ${u}` : ""}`;
+      }
+    }
 
     // Sort each product's lots soonest-to-expire first (nulls last), then oldest.
     g.lots.sort((a, b) => {

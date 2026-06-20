@@ -8,6 +8,7 @@ import type { ProductGroup } from "@/lib/products";
 import { locationOptions } from "@/lib/locations";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
+const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Records another purchase (lot) of an existing product. Because useAddStock
@@ -27,6 +28,8 @@ export function AddPurchaseDialog({
 
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState(product.unit ?? "pcs");
+  const [packSize, setPackSize] = useState(rep?.pack_size != null ? String(rep.pack_size) : "");
+  const [packSizeUnit, setPackSizeUnit] = useState(rep?.pack_size_unit ?? "g");
   const [price, setPrice] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(today());
   const [expiryDate, setExpiryDate] = useState("");
@@ -46,6 +49,8 @@ export function AddPurchaseDialog({
         attributes: product.attributes,
         quantity: Number(quantity) || 1,
         unit,
+        packSize: packSize ? Number(packSize) : null,
+        packSizeUnit: packSize ? packSizeUnit : null,
         price: price ? Number(price) : null,
         currency: product.currency,
         purchaseDate,
@@ -104,6 +109,34 @@ export function AddPurchaseDialog({
                   <option key={s.id} value={s.name} />
                 ))}
               </datalist>
+            </div>
+          </div>
+
+          <div className="rounded-xl border p-3">
+            <label className="label">Each unit contains (optional)</label>
+            <div className="flex items-center gap-2">
+              <input
+                className="input w-24"
+                type="number"
+                min="0"
+                step="any"
+                value={packSize}
+                onChange={(e) => setPackSize(e.target.value)}
+                placeholder="50"
+                inputMode="decimal"
+              />
+              <select className="input w-24" value={packSizeUnit} onChange={(e) => setPackSizeUnit(e.target.value)}>
+                {PACK_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-text-muted">
+                {packSize && Number(packSize) > 0
+                  ? `${quantity || 0} × ${packSize} ${packSizeUnit}`
+                  : "size per unit"}
+              </p>
             </div>
           </div>
 

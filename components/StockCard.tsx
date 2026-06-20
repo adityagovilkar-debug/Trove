@@ -20,6 +20,7 @@ import {
   useLocationPaths,
 } from "@/lib/queries";
 import { prominentAttributes } from "@/lib/domainFields";
+import { packLabel, packTotal } from "@/lib/products";
 import { EditStockDialog } from "./EditStockDialog";
 import {
   cn,
@@ -97,8 +98,10 @@ export function StockCard({ row }: { row: InventoryDetail }) {
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
           <span className="font-medium text-text">
-            {row.quantity}
-            {row.unit ? ` ${row.unit}` : ""}
+            {packLabel(row) ?? `${row.quantity}${row.unit ? ` ${row.unit}` : ""}`}
+            {packTotal(row) && (
+              <span className="ml-1 font-normal text-text-muted">({packTotal(row)})</span>
+            )}
           </span>
           {attrs.map((a) => (
             <span key={a.label}>{a.value}</span>

@@ -60,6 +60,8 @@ export interface InventoryDetail {
   household_id: string;
   quantity: number;
   unit: string | null;
+  pack_size: number | null; // content per unit, e.g. 50 (a 50 g packet)
+  pack_size_unit: string | null; // unit of pack_size, e.g. "g"
   price: number | null;
   currency: string;
   purchase_date: string;

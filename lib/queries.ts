@@ -230,6 +230,8 @@ export interface AddStockInput {
   // stock row
   quantity: number;
   unit?: string | null;
+  packSize?: number | null;
+  packSizeUnit?: string | null;
   price?: number | null;
   currency?: string;
   purchaseDate?: string;
@@ -321,6 +323,8 @@ export function useAddStock() {
         store_id: storeId,
         quantity: input.quantity,
         unit: input.unit ?? null,
+        pack_size: input.packSize ?? null,
+        pack_size_unit: input.packSizeUnit ?? null,
         price: input.price ?? null,
         currency: input.currency ?? "INR",
         purchase_date: input.purchaseDate ?? new Date().toISOString().slice(0, 10),
@@ -381,6 +385,8 @@ export interface UpdateStockInput {
   attributes?: Record<string, unknown>;
   quantity: number;
   unit?: string | null;
+  packSize?: number | null;
+  packSizeUnit?: string | null;
   price?: number | null;
   expiryDate?: string | null;
   purchaseDate?: string;
@@ -438,6 +444,8 @@ export function useUpdateStock() {
           store_id: storeId,
           quantity: input.quantity,
           unit: input.unit ?? null,
+          pack_size: input.packSize ?? null,
+          pack_size_unit: input.packSizeUnit ?? null,
           price: input.price ?? null,
           expiry_date: input.expiryDate ?? null,
           purchase_date: input.purchaseDate,

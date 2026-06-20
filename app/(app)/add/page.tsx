@@ -11,6 +11,7 @@ import { AttributeFields } from "@/components/AttributeFields";
 import { locationOptions } from "@/lib/locations";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
+const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function AddPage() {
@@ -30,6 +31,8 @@ export default function AddPage() {
   const [categoryId, setCategoryId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState("pcs");
+  const [packSize, setPackSize] = useState("");
+  const [packSizeUnit, setPackSizeUnit] = useState("g");
   const [price, setPrice] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(today());
   const [expiryDate, setExpiryDate] = useState("");
@@ -85,6 +88,7 @@ export default function AddPage() {
   function reset() {
     setName(""); setBrand(""); setBarcode(""); setImageUrl(null);
     setCategoryId(""); setQuantity("1"); setUnit("pcs"); setPrice("");
+    setPackSize("");
     setExpiryDate(""); setStoreName(""); setNotes(""); setAttributes({});
     setPurchaseDate(today());
   }
@@ -102,6 +106,8 @@ export default function AddPage() {
         categoryId: categoryId || null,
         quantity: Number(quantity) || 1,
         unit,
+        packSize: packSize ? Number(packSize) : null,
+        packSizeUnit: packSize ? packSizeUnit : null,
         price: price ? Number(price) : null,
         currency,
         purchaseDate,
@@ -280,6 +286,41 @@ export default function AddPage() {
                 <option key={s.id} value={s.name} />
               ))}
             </datalist>
+          </div>
+        </div>
+
+        {/* Pack size (optional) — what one unit contains */}
+        <div className="card p-4">
+          <label className="label">Each unit contains (optional)</label>
+          <div className="flex items-center gap-2">
+            <input
+              className="input w-24"
+              type="number"
+              min="0"
+              step="any"
+              value={packSize}
+              onChange={(e) => setPackSize(e.target.value)}
+              placeholder="50"
+              inputMode="decimal"
+            />
+            <select
+              className="input w-24"
+              value={packSizeUnit}
+              onChange={(e) => setPackSizeUnit(e.target.value)}
+            >
+              {PACK_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-text-muted">
+              {packSize && Number(packSize) > 0
+                ? `${quantity || 0} × ${packSize} ${packSizeUnit} = ${
+                    Math.round(Number(quantity || 0) * Number(packSize) * 100) / 100
+                  } ${packSizeUnit} total`
+                : "e.g. 4 packets of 50 g each → Quantity 4, pack size 50 g"}
+            </p>
           </div>
         </div>
 

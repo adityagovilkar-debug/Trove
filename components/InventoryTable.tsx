@@ -18,6 +18,7 @@ import type { InventoryDetail } from "@/lib/types";
 import {
   groupIntoProducts,
   lotToConsume,
+  packLabel,
   type ProductGroup,
 } from "@/lib/products";
 import {
@@ -215,6 +216,9 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                         {g.totalQty}
                         {g.unit ? ` ${g.unit}` : ""}
                       </span>
+                      {g.contentLabel && (
+                        <span className="ml-1 text-xs text-text-muted">· {g.contentLabel}</span>
+                      )}
                       {g.lotCount > 1 && (
                         <span className="ml-1 text-xs text-text-muted">({g.lotCount} lots)</span>
                       )}
@@ -294,8 +298,7 @@ function LotRow({ lot, onEdit }: { lot: InventoryDetail; onEdit: () => void }) {
         </span>
       </td>
       <td className="px-4 py-2">
-        {lot.quantity}
-        {lot.unit ? ` ${lot.unit}` : ""}
+        {packLabel(lot) ?? `${lot.quantity}${lot.unit ? ` ${lot.unit}` : ""}`}
       </td>
       <td className="px-4 py-2 text-text-muted">
         <span className="inline-flex items-center gap-1">
@@ -396,6 +399,7 @@ function ProductCardMobile({
                 {g.totalQty}
                 {g.unit ? ` ${g.unit}` : ""}
               </span>
+              {g.contentLabel && <span>{g.contentLabel}</span>}
               {multi && <span>{g.lotCount} lots</span>}
               {locs.length > 0 && (
                 <span className="inline-flex items-center gap-1">
@@ -438,8 +442,8 @@ function MobileLotRow({ lot, onEdit }: { lot: InventoryDetail; onEdit: () => voi
     <div className="flex items-center gap-2 text-xs">
       <div className="min-w-0 flex-1">
         <div className="text-text">
-          {lot.quantity}
-          {lot.unit ? ` ${lot.unit}` : ""} · {formatMoney(lot.price, lot.currency)}
+          {packLabel(lot) ?? `${lot.quantity}${lot.unit ? ` ${lot.unit}` : ""}`} ·{" "}
+          {formatMoney(lot.price, lot.currency)}
         </div>
         <div className="truncate text-text-muted">
           {formatDate(lot.purchase_date)}
