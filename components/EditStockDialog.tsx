@@ -54,6 +54,7 @@ export function EditStockDialog({
       {
         id: row.id,
         itemId: row.item_id,
+        domainId: row.domain_id,
         name: name.trim(),
         brand: brand.trim() || null,
         categoryId: categoryId || null,

@@ -272,6 +272,10 @@ export function useAddStock() {
         nameQ = input.domainId
           ? nameQ.eq("domain_id", input.domainId)
           : nameQ.is("domain_id", null);
+        // Brand is part of product identity: Lays and Balaji "Potato Chips" are
+        // distinct items (so their stock and price trends stay separate).
+        const addBrand = input.brand?.trim();
+        nameQ = addBrand ? nameQ.ilike("brand", addBrand) : nameQ.is("brand", null);
         const { data: byName } = await nameQ.limit(1).maybeSingle();
         itemId = byName?.id ?? null;
       }
@@ -379,6 +383,7 @@ export function useSetStatus() {
 export interface UpdateStockInput {
   id: string; // inventory row id
   itemId: string;
+  domainId?: string | null;
   name: string;
   brand?: string | null;
   categoryId?: string | null;
@@ -403,16 +408,52 @@ export function useUpdateStock() {
   return useMutation({
     mutationFn: async (input: UpdateStockInput) => {
       const sb = supabaseBrowser();
+      if (!householdId) throw new Error("No household");
 
+      // Name + brand are product identity and live on the shared catalog item,
+      // so editing them in place would change sibling lots too. Instead resolve
+      // the catalog item matching the new (name, brand, domain) — find-or-create
+      // — and re-point THIS lot to it. Changing one lot's brand then forks it
+      // onto its own item without touching the others.
+      const editBrand = input.brand?.trim() || null;
+      let targetItemId = input.itemId;
+      let idQ = sb
+        .from("items")
+        .select("id")
+        .eq("household_id", householdId)
+        .ilike("name", input.name.trim());
+      idQ = input.domainId ? idQ.eq("domain_id", input.domainId) : idQ.is("domain_id", null);
+      idQ = editBrand ? idQ.ilike("brand", editBrand) : idQ.is("brand", null);
+      const { data: match } = await idQ.limit(1).maybeSingle();
+      if (match?.id) {
+        targetItemId = match.id as string;
+      } else {
+        const { data: created, error: cErr } = await sb
+          .from("items")
+          .insert({
+            household_id: householdId,
+            name: input.name.trim(),
+            brand: editBrand,
+            domain_id: input.domainId ?? null,
+            category_id: input.categoryId ?? null,
+            attributes: input.attributes ?? {},
+          })
+          .select("id")
+          .single();
+        if (cErr) throw cErr;
+        targetItemId = (created as { id: string }).id;
+      }
+
+      // Keep the resolved item's catalog fields current.
       const { error: itemErr } = await sb
         .from("items")
         .update({
-          name: input.name,
-          brand: input.brand ?? null,
+          name: input.name.trim(),
+          brand: editBrand,
           category_id: input.categoryId ?? null,
           attributes: input.attributes ?? {},
         })
-        .eq("id", input.itemId);
+        .eq("id", targetItemId);
       if (itemErr) throw itemErr;
 
       // Resolve a typed store name to a store row (create on first use).
@@ -440,6 +481,7 @@ export function useUpdateStock() {
       const { error: invErr } = await sb
         .from("inventory")
         .update({
+          item_id: targetItemId,
           location_id: input.locationId ?? null,
           store_id: storeId,
           quantity: input.quantity,
