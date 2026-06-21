@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Track everything you own, what's expiring, and what to rebuy.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0e0d0a",
-    theme_color: "#ed8c0f",
+    background_color: "#fbf6ee",
+    theme_color: "#c2410c",
     orientation: "portrait-primary",
     categories: ["productivity", "lifestyle", "utilities"],
     icons: [

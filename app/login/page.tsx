@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { toast } from "sonner";
+import { TroveMark } from "@/components/TroveMark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,8 +48,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon.svg" alt="Trove" className="mb-3 h-14 w-14 rounded-2xl shadow-md" />
+          <TroveMark className="mb-3 h-14 w-14 rounded-2xl shadow-md" />
           <h1 className="text-2xl font-semibold tracking-tight">Trove</h1>
           <p className="mt-1 text-sm text-text-muted">
             Know what you have, before you buy it again.

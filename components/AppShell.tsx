@@ -18,6 +18,7 @@ import {
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
+import { TroveMark } from "./TroveMark";
 import { CheckHaveSearch } from "./CheckHaveSearch";
 import { CommandPalette } from "./CommandPalette";
 import { SyncStatus } from "./SyncStatus";
@@ -65,9 +66,8 @@ export function AppShell({
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r bg-surface p-4 md:flex">
         <div className="mb-6 flex items-center gap-2 px-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon.svg" alt="" className="h-9 w-9 rounded-xl" />
-          <span className="text-lg font-semibold tracking-tight">Trove</span>
+          <TroveMark className="h-9 w-9 rounded-xl" />
+          <span className="wordmark text-lg font-semibold tracking-tight">Trove</span>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1">
@@ -111,8 +111,7 @@ export function AppShell({
         {/* Top bar with the killer "do I have it?" search */}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-bg/80 px-4 py-3 backdrop-blur md:px-8">
           <div className="flex items-center gap-2 md:hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon.svg" alt="" className="h-8 w-8 rounded-lg" />
+            <TroveMark className="h-8 w-8 rounded-lg" />
           </div>
           <div className="flex-1">
             <CheckHaveSearch />

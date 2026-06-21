@@ -8,6 +8,7 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useHouseholdId, useRefData } from "@/lib/queries";
 import { NotificationToggle } from "@/components/NotificationToggle";
 import { LocationManager } from "@/components/LocationManager";
+import { AppearanceSettings } from "@/components/AppearanceSettings";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 
@@ -76,6 +77,9 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+
+      {/* Appearance */}
+      <AppearanceSettings />
 
       {/* Household */}
       <section className="card space-y-4 p-5">
