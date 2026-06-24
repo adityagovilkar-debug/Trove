@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Check, Trash2, ShoppingCart, Sparkles } from "lucide-react";
+import { Plus, Check, Trash2, ShoppingCart, Sparkles, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   useShoppingList,
@@ -9,10 +9,13 @@ import {
   useToggleShoppingItem,
   useDeleteShoppingItem,
   useClearBought,
+  useRefData,
 } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/Skeleton";
+import { RepurchaseDialog, seedFromShopping } from "@/components/RepurchaseDialog";
+import type { ShoppingItem } from "@/lib/types";
 
 const SOURCE_LABEL: Record<string, string> = {
   restock: "predicted",
@@ -23,11 +26,14 @@ const SOURCE_LABEL: Record<string, string> = {
 
 export default function ShoppingPage() {
   const { data: items = [], isLoading } = useShoppingList();
+  const { data: ref } = useRefData();
   const add = useAddShoppingItems();
   const toggle = useToggleShoppingItem();
   const del = useDeleteShoppingItem();
   const clear = useClearBought();
   const [name, setName] = useState("");
+  const [buying, setBuying] = useState<ShoppingItem | null>(null);
+  const currency = ref?.household.base_currency ?? "INR";
 
   const { pending, bought } = useMemo(
     () => ({
@@ -110,6 +116,14 @@ export default function ShoppingPage() {
                     )}
                   </div>
                   <button
+                    onClick={() => setBuying(it)}
+                    className="btn-outline shrink-0 px-2.5 py-1.5"
+                    title="Bought it — add to stock"
+                  >
+                    <PackagePlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Buy</span>
+                  </button>
+                  <button
                     onClick={() => del.mutate(it.id)}
                     className="btn-ghost px-2 py-1.5 text-text-muted hover:text-rose-500"
                     aria-label="Remove"
@@ -164,6 +178,15 @@ export default function ShoppingPage() {
         <ShoppingCart className="h-3.5 w-3.5" />
         Shared with your household in real time
       </p>
+
+      {buying && (
+        <RepurchaseDialog
+          seed={seedFromShopping(buying, currency)}
+          title="Add to stock"
+          onClose={() => setBuying(null)}
+          onPurchased={() => toggle.mutate({ id: buying.id, is_bought: true })}
+        />
+      )}
     </div>
   );
 }

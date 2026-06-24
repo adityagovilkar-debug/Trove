@@ -8,6 +8,7 @@ import { useAddStock, useRefData } from "@/lib/queries";
 import { lookupBarcode, lookupBook } from "@/lib/barcode";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { AttributeFields } from "@/components/AttributeFields";
+import { ProductSearch } from "@/components/ProductSearch";
 import { locationOptions } from "@/lib/locations";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
@@ -169,6 +170,22 @@ export default function AddPage() {
 
         {/* Identity */}
         <div className="card space-y-4 p-4">
+          <div>
+            <label className="label">Look up a product</label>
+            <ProductSearch
+              onPick={(p) => {
+                setName(p.name);
+                if (p.brand) setBrand(p.brand);
+                if (p.imageUrl) setImageUrl(p.imageUrl);
+                if (p.barcode) setBarcode(p.barcode);
+                toast.success(`Filled in “${p.name}”`);
+              }}
+            />
+            <p className="mt-1 text-xs text-text-muted">
+              Search a database to auto-fill, scan a barcode, or just type it in.
+            </p>
+          </div>
+
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <label className="label">Item name *</label>

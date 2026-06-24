@@ -10,6 +10,7 @@ import {
   CircleSlash,
   RotateCcw,
   MapPin,
+  ShoppingCart,
   Store as StoreIcon,
 } from "lucide-react";
 import type { InventoryDetail } from "@/lib/types";
@@ -22,6 +23,7 @@ import {
 import { prominentAttributes } from "@/lib/domainFields";
 import { packLabel, packTotal } from "@/lib/products";
 import { EditStockDialog } from "./EditStockDialog";
+import { RepurchaseDialog, seedFromLot } from "./RepurchaseDialog";
 import {
   cn,
   EXPIRY_STYLES,
@@ -35,6 +37,7 @@ import { toast } from "sonner";
 export function StockCard({ row }: { row: InventoryDetail }) {
   const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [buying, setBuying] = useState(false);
   const setStatus = useSetStatus();
   const consume = useConsume();
   const del = useDeleteStock();
@@ -152,6 +155,16 @@ export function StockCard({ row }: { row: InventoryDetail }) {
             <span className="hidden sm:inline">{canUseOne ? "All done" : "Finished"}</span>
           </button>
         )}
+        {!isActive && (
+          <button
+            onClick={() => setBuying(true)}
+            className="btn-primary px-2.5 py-1.5"
+            title="Buy this again — adds a fresh entry to your stock"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span className="hidden sm:inline">Buy again</span>
+          </button>
+        )}
         <div className="relative">
           <button
             onClick={() => setMenu((m) => !m)}
@@ -190,6 +203,9 @@ export function StockCard({ row }: { row: InventoryDetail }) {
       </div>
     </div>
     {editing && <EditStockDialog row={row} onClose={() => setEditing(false)} />}
+    {buying && (
+      <RepurchaseDialog seed={seedFromLot(row)} onClose={() => setBuying(false)} />
+    )}
     </>
   );
 }

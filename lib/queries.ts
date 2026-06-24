@@ -220,6 +220,7 @@ export function useStockSearch(term: string) {
 // ---------------------------------------------------------------------------
 export interface AddStockInput {
   // item (catalog)
+  itemId?: string | null; // attach to an existing catalog item directly (repurchase)
   name: string;
   brand?: string | null;
   barcode?: string | null;
@@ -253,8 +254,10 @@ export function useAddStock() {
       // Reuse an existing catalog item so repurchases become new *lots* of the
       // same product (not duplicates): match by barcode first, then by name
       // within the same domain.
-      let itemId: string | null = null;
-      if (input.barcode) {
+      // Repurchase passes a known catalog item to attach the new lot to it
+      // directly (keeps brand/trends intact); otherwise resolve by barcode/name.
+      let itemId: string | null = input.itemId ?? null;
+      if (!itemId && input.barcode) {
         const { data: existing } = await sb
           .from("items")
           .select("id")
