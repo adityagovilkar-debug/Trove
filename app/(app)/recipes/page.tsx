@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Clock, Users, ChefHat, CircleCheck, CalendarClock, X } from "lucide-react";
+import { Plus, Search, Clock, Users, ChefHat, CircleCheck, CalendarClock, X, Globe } from "lucide-react";
 import { useRecipes, useInventory, useMealPlans, useDeleteMealPlan } from "@/lib/queries";
 import { buildStockIndex, matchAndSort, totalMinutes } from "@/lib/recipes";
-import { RecipeEditor } from "@/components/RecipeEditor";
+import { RecipeEditor, type RecipeSeed } from "@/components/RecipeEditor";
+import { RecipeImport } from "@/components/RecipeImport";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonRows } from "@/components/Skeleton";
 import { cn, formatDate } from "@/lib/utils";
@@ -23,6 +24,17 @@ export default function RecipesPage() {
   const [search, setSearch] = useState("");
   const [cookableOnly, setCookableOnly] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [seed, setSeed] = useState<RecipeSeed | undefined>(undefined);
+
+  function newRecipe() {
+    setSeed(undefined);
+    setEditing(true);
+  }
+  function closeEditor() {
+    setEditing(false);
+    setSeed(undefined);
+  }
 
   const stock = useMemo(() => buildStockIndex(active), [active]);
   const matches = useMemo(() => matchAndSort(recipes, stock), [recipes, stock]);
@@ -36,7 +48,23 @@ export default function RecipesPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      {editing && <RecipeEditor onClose={() => setEditing(false)} />}
+      {editing && <RecipeEditor seed={seed} onClose={closeEditor} />}
+      {importing && (
+        <RecipeImport
+          onClose={() => setImporting(false)}
+          onPick={(r) => {
+            setSeed({
+              name: r.name,
+              category: r.category,
+              cuisine: r.area,
+              instructions: r.instructions,
+              ingredients: r.ingredients,
+            });
+            setImporting(false);
+            setEditing(true);
+          }}
+        />
+      )}
 
       <div className="flex items-end justify-between">
         <div>
@@ -47,10 +75,16 @@ export default function RecipesPage() {
               : "Your home-cooked dishes."}
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setEditing(true)}>
-          <Plus className="h-[18px] w-[18px]" />
-          <span className="hidden sm:inline">New recipe</span>
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button className="btn-outline" onClick={() => setImporting(true)}>
+            <Globe className="h-[18px] w-[18px]" />
+            <span className="hidden sm:inline">Find online</span>
+          </button>
+          <button className="btn-primary" onClick={newRecipe}>
+            <Plus className="h-[18px] w-[18px]" />
+            <span className="hidden sm:inline">New recipe</span>
+          </button>
+        </div>
       </div>
 
       {meals.length > 0 && (
@@ -117,7 +151,7 @@ export default function RecipesPage() {
           title="No recipes yet"
           hint="Add your home-cooked dishes and Trove will tell you which ones you can make from what's in stock."
           action={
-            <button className="btn-primary" onClick={() => setEditing(true)}>
+            <button className="btn-primary" onClick={newRecipe}>
               <Plus className="h-4 w-4" /> Add your first recipe
             </button>
           }
@@ -134,6 +168,7 @@ export default function RecipesPage() {
                   <div className="min-w-0">
                     <p className="truncate font-medium">{m.recipe.name}</p>
                     <p className="flex flex-wrap items-center gap-x-3 text-xs text-text-muted">
+                      {m.recipe.cuisine && <span>{m.recipe.cuisine}</span>}
                       {m.recipe.category && <span>{m.recipe.category}</span>}
                       {mins && (
                         <span className="inline-flex items-center gap-1">
@@ -160,7 +195,7 @@ export default function RecipesPage() {
                   )}
                 </div>
                 {!m.canMake && m.missing.length > 0 && (
-                  <p className="truncate text-xs text-text-muted">
+                  <p className="line-clamp-2 break-words text-xs text-text-muted">
                     Missing: {m.missing.map((i) => i.name).join(", ")}
                   </p>
                 )}

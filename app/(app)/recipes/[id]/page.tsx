@@ -168,6 +168,7 @@ export default function RecipeDetailPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{recipe.name}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-text-muted">
+            {recipe.cuisine && <span>{recipe.cuisine}</span>}
             {recipe.category && <span>{recipe.category}</span>}
             {mins && (
               <span className="inline-flex items-center gap-1">
@@ -286,7 +287,7 @@ export default function RecipeDetailPage() {
           {recipe.ingredients.map((ing) => {
             const have = ing.optional ? null : inStock(ing.id);
             return (
-              <li key={ing.id} className="flex items-center gap-3 text-sm">
+              <li key={ing.id} className="flex items-start gap-3 text-sm">
                 {ing.optional ? (
                   <Circle className="h-4 w-4 shrink-0 text-text-muted/40" />
                 ) : have ? (
@@ -294,7 +295,7 @@ export default function RecipeDetailPage() {
                 ) : (
                   <Circle className="h-4 w-4 shrink-0 text-amber-500" />
                 )}
-                <span className={cn("flex-1", have === false && "text-text")}>
+                <span className={cn("min-w-0 flex-1 break-words", have === false && "text-text")}>
                   {ing.quantity != null && (
                     <span className="text-text-muted">
                       {fmtQty(ing.quantity * factor)}

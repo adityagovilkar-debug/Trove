@@ -155,6 +155,7 @@ export interface Recipe {
   prep_minutes: number | null;
   cook_minutes: number | null;
   category: string | null;
+  cuisine: string | null;
   image_url: string | null;
   source: string | null;
   created_at: string;

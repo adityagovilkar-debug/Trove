@@ -899,6 +899,7 @@ export interface RecipeInput {
   prepMinutes?: number | null;
   cookMinutes?: number | null;
   category?: string | null;
+  cuisine?: string | null;
   ingredients: RecipeIngredientInput[];
 }
 
@@ -917,6 +918,7 @@ export function useUpsertRecipe() {
         prep_minutes: input.prepMinutes ?? null,
         cook_minutes: input.cookMinutes ?? null,
         category: input.category ?? null,
+        cuisine: input.cuisine ?? null,
       };
       let recipeId = input.id;
       if (recipeId) {

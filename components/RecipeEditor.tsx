@@ -14,24 +14,39 @@ interface IngRow {
   staple: boolean;
 }
 
+// Prefill for a brand-new recipe (e.g. imported from an online database).
+export interface RecipeSeed {
+  name?: string;
+  category?: string | null;
+  cuisine?: string | null;
+  servings?: number | null;
+  instructions?: string | null;
+  ingredients?: { name: string; quantity: number | null; unit: string | null }[];
+}
+
 export function RecipeEditor({
   recipe,
+  seed,
   onClose,
   onSaved,
 }: {
   recipe?: RecipeWithIngredients | null;
+  seed?: RecipeSeed;
   onClose: () => void;
   onSaved?: (id: string) => void;
 }) {
   const upsert = useUpsertRecipe();
 
-  const [name, setName] = useState(recipe?.name ?? "");
-  const [category, setCategory] = useState(recipe?.category ?? "");
-  const [servings, setServings] = useState(recipe?.servings ? String(recipe.servings) : "");
+  const [name, setName] = useState(recipe?.name ?? seed?.name ?? "");
+  const [category, setCategory] = useState(recipe?.category ?? seed?.category ?? "");
+  const [cuisine, setCuisine] = useState(recipe?.cuisine ?? seed?.cuisine ?? "");
+  const [servings, setServings] = useState(
+    recipe?.servings ? String(recipe.servings) : seed?.servings ? String(seed.servings) : "",
+  );
   const [prep, setPrep] = useState(recipe?.prep_minutes ? String(recipe.prep_minutes) : "");
   const [cook, setCook] = useState(recipe?.cook_minutes ? String(recipe.cook_minutes) : "");
   const [description, setDescription] = useState(recipe?.description ?? "");
-  const [instructions, setInstructions] = useState(recipe?.instructions ?? "");
+  const [instructions, setInstructions] = useState(recipe?.instructions ?? seed?.instructions ?? "");
   const [rows, setRows] = useState<IngRow[]>(
     recipe?.ingredients.length
       ? recipe.ingredients.map((i) => ({
@@ -41,7 +56,15 @@ export function RecipeEditor({
           optional: i.optional,
           staple: i.staple,
         }))
-      : [{ name: "", quantity: "", unit: "", optional: false, staple: false }],
+      : seed?.ingredients?.length
+        ? seed.ingredients.map((i) => ({
+            name: i.name,
+            quantity: i.quantity != null ? String(i.quantity) : "",
+            unit: i.unit ?? "",
+            optional: false,
+            staple: false,
+          }))
+        : [{ name: "", quantity: "", unit: "", optional: false, staple: false }],
   );
 
   function setRow(i: number, patch: Partial<IngRow>) {
@@ -62,6 +85,7 @@ export function RecipeEditor({
         id: recipe?.id,
         name: name.trim(),
         category: category.trim() || null,
+        cuisine: cuisine.trim() || null,
         servings: servings ? Number(servings) : null,
         prepMinutes: prep ? Number(prep) : null,
         cookMinutes: cook ? Number(cook) : null,
@@ -104,11 +128,17 @@ export function RecipeEditor({
               <label className="label">Name *</label>
               <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Dal tadka" required />
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Cuisine</label>
+                <input className="input" value={cuisine} onChange={(e) => setCuisine(e.target.value)} placeholder="e.g. Indian" />
+              </div>
               <div>
                 <label className="label">Category</label>
                 <input className="input" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Dinner" />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="label">Serves</label>
                 <input className="input" type="number" min="0" value={servings} onChange={(e) => setServings(e.target.value)} />
