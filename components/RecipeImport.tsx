@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X, Search, Loader2, Globe } from "lucide-react";
-import { searchOnlineRecipes, type OnlineRecipe } from "@/lib/recipeSearch";
+import { searchRecipes, type OnlineRecipe } from "@/lib/recipeSearch";
 
 // Search an open recipe database (TheMealDB) and pick a dish to import. The
 // picked recipe's ingredients / quantities / method seed the recipe editor.
@@ -27,7 +27,7 @@ export function RecipeImport({
     }
     setLoading(true);
     const t = setTimeout(async () => {
-      const r = await searchOnlineRecipes(term);
+      const r = await searchRecipes(term);
       setResults(r);
       setLoading(false);
       setSearched(true);
@@ -81,7 +81,14 @@ export function RecipeImport({
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{r.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate font-medium">{r.name}</p>
+                  {r.source === "local" && (
+                    <span className="chip shrink-0 bg-brand-100 text-brand-700 ring-brand-500/30 ring-inset dark:bg-brand-900/40 dark:text-brand-300">
+                      regional
+                    </span>
+                  )}
+                </div>
                 <p className="truncate text-xs text-text-muted">
                   {[r.area, r.category].filter(Boolean).join(" · ")}
                   {r.ingredients.length > 0 && ` · ${r.ingredients.length} ingredients`}
@@ -97,7 +104,8 @@ export function RecipeImport({
           )}
           {!searched && !loading && (
             <p className="py-8 text-center text-xs text-text-muted">
-              Search by dish name. Results from TheMealDB; you can tweak everything before saving.
+              Search by dish name — regional Indian home dishes plus TheMealDB.
+              You can tweak everything before saving.
             </p>
           )}
         </div>

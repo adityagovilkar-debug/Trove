@@ -1,6 +1,9 @@
+import { searchLocalRecipes } from "./indianRecipes";
+
 // Search recipes online via TheMealDB — a free, open, no-key recipe database
-// (CORS-enabled). Used to import a dish and auto-fill its ingredients,
-// quantities, and method into the recipe editor.
+// (CORS-enabled) — merged with a curated local set of regional Indian dishes.
+// Used to import a dish and auto-fill its ingredients, quantities, and method
+// into the recipe editor.
 
 export interface OnlineIngredient {
   name: string;
@@ -16,6 +19,7 @@ export interface OnlineRecipe {
   thumb: string | null;
   instructions: string;
   ingredients: OnlineIngredient[];
+  source?: "web" | "local";
 }
 
 const FRACTIONS: Record<string, number> = {
@@ -83,9 +87,20 @@ export async function searchOnlineRecipes(query: string): Promise<OnlineRecipe[]
         thumb: m.strMealThumb || null,
         instructions: (m.strInstructions ?? "").trim(),
         ingredients,
+        source: "web" as const,
       };
     });
   } catch {
     return [];
   }
+}
+
+// Unified search across the curated local Indian set (regional home dishes the
+// online DB misses) and TheMealDB. Local matches come first; web results that
+// duplicate a local dish by name are dropped.
+export async function searchRecipes(query: string): Promise<OnlineRecipe[]> {
+  const local = searchLocalRecipes(query);
+  const web = await searchOnlineRecipes(query);
+  const localNames = new Set(local.map((r) => r.name.trim().toLowerCase()));
+  return [...local, ...web.filter((r) => !localNames.has(r.name.trim().toLowerCase()))];
 }
