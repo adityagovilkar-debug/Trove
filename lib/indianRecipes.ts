@@ -513,6 +513,177 @@ export const INDIAN_RECIPES: LocalRecipe[] = [
       { name: "Salt", quantity: null, unit: null },
     ],
   },
+  {
+    id: "in-sabudana-vada",
+    name: "Sabudana Vada",
+    area: "Maharashtrian",
+    category: "Snack",
+    thumb: null,
+    aliases: ["sabudana vada", "sago vada", "sabudana wada"],
+    instructions:
+      "Soak sabudana overnight until soft and separate. Mix with boiled mashed potato, crushed roasted peanuts, cumin, chopped green chilli, coriander, sugar and salt. Shape into patties and deep-fry on medium heat till golden and crisp. Serve with peanut-curd chutney.",
+    ingredients: [
+      { name: "Sabudana", quantity: 1, unit: "cup" },
+      { name: "Potato", quantity: 2, unit: "pcs" },
+      { name: "Peanuts", quantity: 0.5, unit: "cup" },
+      { name: "Cumin seeds", quantity: 1, unit: "tsp" },
+      { name: "Green chilli", quantity: 2, unit: "pcs" },
+      { name: "Coriander", quantity: 0.25, unit: "cup" },
+      { name: "Sugar", quantity: 1, unit: "tsp" },
+      { name: "Oil", quantity: 2, unit: "cup" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-kothimbir-vadi",
+    name: "Kothimbir Vadi",
+    area: "Maharashtrian",
+    category: "Snack",
+    thumb: null,
+    aliases: ["kothimbir vadi", "coriander fritters", "kothimbir wadi"],
+    instructions:
+      "Mix besan with lots of chopped coriander, ginger-garlic, green chilli, turmeric, chilli powder, sesame and salt, adding water to a thick batter. Steam in a greased tin 15-20 minutes till set, then cool and cut into diamonds. Shallow- or deep-fry the pieces till crisp and golden.",
+    ingredients: [
+      { name: "Besan (gram flour)", quantity: 1.5, unit: "cup" },
+      { name: "Coriander", quantity: 2, unit: "cup" },
+      { name: "Ginger-garlic paste", quantity: 1, unit: "tbsp" },
+      { name: "Green chilli", quantity: 2, unit: "pcs" },
+      { name: "Turmeric", quantity: 0.5, unit: "tsp" },
+      { name: "Red chilli powder", quantity: 1, unit: "tsp" },
+      { name: "Sesame seeds", quantity: 1, unit: "tbsp" },
+      { name: "Oil", quantity: 4, unit: "tbsp" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-amti",
+    name: "Amti",
+    area: "Maharashtrian",
+    category: "Main",
+    thumb: null,
+    aliases: ["amti", "maharashtrian dal", "varan amti"],
+    instructions:
+      "Cook toor dal with turmeric till soft and mash. Temper oil with mustard, cumin, hing and curry leaves, then stir in goda masala. Add the dal with water, tamarind pulp, jaggery and salt and simmer into a tangy-sweet-spicy dal. Finish with coriander; serve with rice.",
+    ingredients: [
+      { name: "Toor dal", quantity: 1, unit: "cup" },
+      { name: "Goda masala", quantity: 1.5, unit: "tbsp" },
+      { name: "Tamarind", quantity: 1, unit: "tsp" },
+      { name: "Jaggery", quantity: 1, unit: "tbsp" },
+      { name: "Mustard seeds", quantity: 1, unit: "tsp" },
+      { name: "Cumin seeds", quantity: 1, unit: "tsp" },
+      { name: "Hing (asafoetida)", quantity: 1, unit: "pcs" },
+      { name: "Turmeric", quantity: 0.5, unit: "tsp" },
+      { name: "Curry leaves", quantity: 8, unit: "pcs" },
+      { name: "Oil", quantity: 2, unit: "tbsp" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-bharli-vangi",
+    name: "Bharli Vangi",
+    area: "Maharashtrian",
+    category: "Main",
+    thumb: null,
+    aliases: ["bharli vangi", "stuffed brinjal", "stuffed eggplant", "bharleli vangi"],
+    instructions:
+      "Dry-roast and grind coconut, peanuts and onion with goda masala to a coarse masala. Slit small brinjals and stuff with it. Cook in oil with the leftover masala, ginger-garlic, tamarind, jaggery, salt and water, covered, till the brinjals are tender and the gravy thick.",
+    ingredients: [
+      { name: "Small brinjals", quantity: 8, unit: "pcs" },
+      { name: "Grated coconut", quantity: 0.5, unit: "cup" },
+      { name: "Peanuts", quantity: 0.25, unit: "cup" },
+      { name: "Goda masala", quantity: 2, unit: "tbsp" },
+      { name: "Onion", quantity: 1, unit: "pcs" },
+      { name: "Ginger-garlic paste", quantity: 1, unit: "tbsp" },
+      { name: "Tamarind", quantity: 1, unit: "tsp" },
+      { name: "Jaggery", quantity: 1, unit: "tsp" },
+      { name: "Oil", quantity: 4, unit: "tbsp" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-puran-poli",
+    name: "Puran Poli",
+    area: "Maharashtrian",
+    category: "Dessert",
+    thumb: null,
+    aliases: ["puran poli", "puranpoli", "holige", "obbattu"],
+    instructions:
+      "Cook chana dal soft, drain, then cook with jaggery till thick and mash with cardamom and nutmeg to make puran. Knead a soft dough from flour, a little oil and salt. Stuff puran into dough balls, roll out gently, and roast on a tawa with ghee till golden on both sides.",
+    ingredients: [
+      { name: "Chana dal", quantity: 1, unit: "cup" },
+      { name: "Jaggery", quantity: 1, unit: "cup" },
+      { name: "Wheat flour", quantity: 1.5, unit: "cup" },
+      { name: "Cardamom", quantity: 0.5, unit: "tsp" },
+      { name: "Nutmeg", quantity: 0.25, unit: "tsp" },
+      { name: "Ghee", quantity: 0.5, unit: "cup" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-vada-pav",
+    name: "Vada Pav",
+    area: "Maharashtrian",
+    category: "Snack",
+    thumb: null,
+    aliases: ["vada pav", "wada pav", "batata vada pav"],
+    instructions:
+      "Mash boiled potato with a tempering of mustard, turmeric, curry leaves, crushed garlic-green chilli and salt; shape into balls. Dip in a besan batter and deep-fry to make the vada. Serve each vada in a pav smeared with dry garlic chutney and green chutney.",
+    ingredients: [
+      { name: "Potato", quantity: 4, unit: "pcs" },
+      { name: "Besan (gram flour)", quantity: 1, unit: "cup" },
+      { name: "Garlic", quantity: 6, unit: "pcs" },
+      { name: "Green chilli", quantity: 3, unit: "pcs" },
+      { name: "Mustard seeds", quantity: 1, unit: "tsp" },
+      { name: "Turmeric", quantity: 0.5, unit: "tsp" },
+      { name: "Curry leaves", quantity: 8, unit: "pcs" },
+      { name: "Pav", quantity: 6, unit: "pcs" },
+      { name: "Oil", quantity: 2, unit: "cup" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-matki-usal",
+    name: "Matki Usal",
+    area: "Maharashtrian",
+    category: "Main",
+    thumb: null,
+    aliases: ["matki usal", "moth bean usal", "matki chi usal"],
+    instructions:
+      "Temper oil with mustard seeds, curry leaves and chopped onion. Add turmeric, chilli powder and goda masala, then the matki sprouts and water. Cover and cook till the sprouts are soft; finish with grated coconut and coriander.",
+    ingredients: [
+      { name: "Matki (moth bean) sprouts", quantity: 2, unit: "cup" },
+      { name: "Onion", quantity: 1, unit: "pcs" },
+      { name: "Goda masala", quantity: 1, unit: "tbsp" },
+      { name: "Grated coconut", quantity: 2, unit: "tbsp" },
+      { name: "Mustard seeds", quantity: 1, unit: "tsp" },
+      { name: "Turmeric", quantity: 0.5, unit: "tsp" },
+      { name: "Red chilli powder", quantity: 1, unit: "tsp" },
+      { name: "Curry leaves", quantity: 8, unit: "pcs" },
+      { name: "Oil", quantity: 2, unit: "tbsp" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
+  {
+    id: "in-kanda-bhaji",
+    name: "Kanda Bhaji",
+    area: "Maharashtrian",
+    category: "Snack",
+    thumb: null,
+    aliases: ["kanda bhaji", "onion bhaji", "kanda bhajji", "onion pakora"],
+    instructions:
+      "Toss thinly sliced onion with besan, rice flour, turmeric, chilli powder, ajwain, chopped green chilli and salt. Sprinkle just enough water so it binds without a runny batter. Drop loose spoonfuls into hot oil and fry till crisp and golden. Serve hot with chutney and chai.",
+    ingredients: [
+      { name: "Onion", quantity: 3, unit: "pcs" },
+      { name: "Besan (gram flour)", quantity: 1, unit: "cup" },
+      { name: "Rice flour", quantity: 2, unit: "tbsp" },
+      { name: "Green chilli", quantity: 2, unit: "pcs" },
+      { name: "Turmeric", quantity: 0.5, unit: "tsp" },
+      { name: "Red chilli powder", quantity: 1, unit: "tsp" },
+      { name: "Ajwain (carom)", quantity: 0.5, unit: "tsp" },
+      { name: "Oil", quantity: 2, unit: "cup" },
+      { name: "Salt", quantity: null, unit: null },
+    ],
+  },
 ];
 
 // Search the local set by name, alias, or an ingredient name. Returns plain
@@ -525,4 +696,15 @@ export function searchLocalRecipes(query: string): OnlineRecipe[] {
     if (r.aliases?.some((a) => norm(a).includes(q) || q.includes(norm(a)))) return true;
     return r.ingredients.some((i) => norm(i.name).includes(q));
   }).map(({ aliases: _aliases, ...r }) => ({ ...r, source: "local" as const }));
+}
+
+// The full curated set (aliases stripped), grouped by cuisine then name — for
+// browsing the regional collection without typing a search.
+export function allLocalRecipes(): OnlineRecipe[] {
+  return INDIAN_RECIPES.map(({ aliases: _aliases, ...r }) => ({
+    ...r,
+    source: "local" as const,
+  })).sort(
+    (a, b) => (a.area || "").localeCompare(b.area || "") || a.name.localeCompare(b.name),
+  );
 }

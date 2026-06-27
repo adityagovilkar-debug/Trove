@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, Search, Loader2, Globe } from "lucide-react";
 import { searchRecipes, type OnlineRecipe } from "@/lib/recipeSearch";
+import { allLocalRecipes } from "@/lib/indianRecipes";
 
 // Search an open recipe database (TheMealDB) and pick a dish to import. The
 // picked recipe's ingredients / quantities / method seed the recipe editor.
@@ -14,15 +15,17 @@ export function RecipeImport({
   onPick: (r: OnlineRecipe) => void;
 }) {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<OnlineRecipe[]>([]);
+  // Default to browsing the full curated regional set — no need to guess a term.
+  const [results, setResults] = useState<OnlineRecipe[]>(() => allLocalRecipes());
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
     const term = q.trim();
     if (term.length < 2) {
-      setResults([]);
+      setResults(allLocalRecipes());
       setSearched(false);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -35,13 +38,15 @@ export function RecipeImport({
     return () => clearTimeout(t);
   }, [q]);
 
+  const browsing = q.trim().length < 2;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border bg-bg sm:rounded-2xl">
         <div className="flex items-center justify-between border-b bg-surface px-4 py-3">
           <p className="flex items-center gap-2 font-semibold">
             <Globe className="h-4 w-4 text-brand-500" />
-            Find a recipe online
+            Find a recipe
           </p>
           <button onClick={onClose} className="btn-ghost px-2 py-1.5" aria-label="Close">
             <X className="h-4 w-4" />
@@ -54,7 +59,7 @@ export function RecipeImport({
             <input
               className="input pl-10"
               autoFocus
-              placeholder="Search a dish, e.g. paneer, biryani, curry…"
+              placeholder="Search a dish, or browse the list below…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -65,6 +70,11 @@ export function RecipeImport({
         </div>
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-4">
+          {browsing && results.length > 0 && (
+            <p className="px-1 pb-1 text-xs font-medium uppercase tracking-wide text-text-muted">
+              Regional home dishes · tap to add
+            </p>
+          )}
           {results.map((r) => (
             <button
               key={r.id}
@@ -100,12 +110,6 @@ export function RecipeImport({
           {searched && !loading && results.length === 0 && (
             <p className="py-8 text-center text-sm text-text-muted">
               No recipes found. Try a different name.
-            </p>
-          )}
-          {!searched && !loading && (
-            <p className="py-8 text-center text-xs text-text-muted">
-              Search by dish name — regional Indian home dishes plus TheMealDB.
-              You can tweak everything before saving.
             </p>
           )}
         </div>

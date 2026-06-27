@@ -78,7 +78,7 @@ export default function RecipesPage() {
         <div className="flex shrink-0 gap-2">
           <button className="btn-outline" onClick={() => setImporting(true)}>
             <Globe className="h-[18px] w-[18px]" />
-            <span className="hidden sm:inline">Find online</span>
+            <span className="hidden sm:inline">Find a recipe</span>
           </button>
           <button className="btn-primary" onClick={newRecipe}>
             <Plus className="h-[18px] w-[18px]" />
