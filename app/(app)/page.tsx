@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Minus,
   Check,
+  ChefHat,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -30,6 +31,7 @@ import {
   useAddShoppingItems,
   useConsume,
   useMarkSubscriptionPaid,
+  useMealPlans,
 } from "@/lib/queries";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { buildUpcoming } from "@/lib/upcoming";
@@ -61,6 +63,7 @@ export default function DashboardPage() {
   const { data: active = [], isLoading: la } = useInventory({ status: "active" });
   const { data: history = [], isLoading: lh } = useTrendsData();
   const { data: subs = [] } = useSubscriptions();
+  const { data: meals = [] } = useMealPlans();
   const { data: shopping = [] } = useShoppingList();
   const addShopping = useAddShoppingItems();
   const consume = useConsume();
@@ -102,7 +105,10 @@ export default function DashboardPage() {
   }, [active, history, activeSubs, month]);
 
   const currency = active[0]?.currency ?? subs[0]?.currency ?? "INR";
-  const upcoming = useMemo(() => buildUpcoming(active, subs).slice(0, 5), [active, subs]);
+  const upcoming = useMemo(
+    () => buildUpcoming(active, subs, meals).slice(0, 5),
+    [active, subs, meals],
+  );
 
   // Groceries are the thing that turns over constantly, so the headline metric
   // is grocery-specific; durables (electronics, books) show in the breakdown.
@@ -245,11 +251,15 @@ export default function DashboardPage() {
                         ? "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"
                         : ev.kind === "warranty"
                           ? "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
-                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+                          : ev.kind === "meal"
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
                     )}
                   >
                     {ev.kind === "subscription" ? (
                       <CreditCard className="h-4 w-4" />
+                    ) : ev.kind === "meal" ? (
+                      <ChefHat className="h-4 w-4" />
                     ) : (
                       <Clock className="h-4 w-4" />
                     )}
@@ -276,7 +286,10 @@ export default function DashboardPage() {
                           onSuccess: () => toast.success(`Recorded payment for ${ev.title}`),
                         });
                     }}
-                    className={cn("btn-ghost shrink-0 px-2 py-1.5", ev.kind === "warranty" && "invisible")}
+                    className={cn(
+                      "btn-ghost shrink-0 px-2 py-1.5",
+                      (ev.kind === "warranty" || ev.kind === "meal") && "invisible",
+                    )}
                     title={ev.kind === "subscription" ? "Mark paid" : "Use one"}
                   >
                     {ev.kind === "subscription" ? <Check className="h-4 w-4" /> : <Minus className="h-4 w-4" />}

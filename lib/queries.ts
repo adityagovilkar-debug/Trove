@@ -64,6 +64,7 @@ async function maybeAutoShop(
       .eq("household_id", householdId)
       .eq("is_bought", false)
       .ilike("name", row.item_name)
+      .limit(1)
       .maybeSingle();
     if (dup) return;
     await sb.from("shopping_list_items").insert({
@@ -197,9 +198,13 @@ export function useInventory(filters: InventoryFilters = {}) {
 export function useStockSearch(term: string) {
   const { data: householdId } = useHouseholdId();
   const trimmed = term.trim();
+  // The .or() filter string is parsed by PostgREST, so commas/parens/quotes in
+  // the term would split the expression and 400 the whole query. Strip them —
+  // a looser match beats a broken search.
+  const safe = trimmed.replace(/[,()."\\]/g, " ").replace(/\s+/g, " ").trim();
   return useQuery({
-    queryKey: ["stock-search", householdId, trimmed],
-    enabled: !!householdId && trimmed.length >= 1,
+    queryKey: ["stock-search", householdId, safe],
+    enabled: !!householdId && safe.length >= 1,
     queryFn: async (): Promise<InventoryDetail[]> => {
       const sb = supabaseBrowser();
       const { data, error } = await sb
@@ -207,7 +212,7 @@ export function useStockSearch(term: string) {
         .select("*")
         .eq("household_id", householdId!)
         .eq("status", "active")
-        .or(`item_name.ilike.%${trimmed}%,item_brand.ilike.%${trimmed}%`)
+        .or(`item_name.ilike.%${safe}%,item_brand.ilike.%${safe}%`)
         .order("item_name");
       if (error) throw error;
       return (data ?? []) as InventoryDetail[];
@@ -263,6 +268,7 @@ export function useAddStock() {
           .select("id")
           .eq("household_id", householdId)
           .eq("barcode", input.barcode)
+          .limit(1)
           .maybeSingle();
         itemId = existing?.id ?? null;
       }

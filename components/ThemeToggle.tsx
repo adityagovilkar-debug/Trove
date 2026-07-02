@@ -6,13 +6,20 @@ import { useEffect, useState } from "react";
 export function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
+  // Keep the icon in sync with the <html> class, however it changes — this
+  // button, the ⌘K palette, or the Settings appearance picker.
   useEffect(() => {
-    setDark(document.documentElement.classList.contains("dark"));
+    const el = document.documentElement;
+    const sync = () => setDark(el.classList.contains("dark"));
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
   }, []);
 
   function toggle() {
-    const next = !dark;
-    setDark(next);
+    // Read the DOM, not React state — state can lag other togglers.
+    const next = !document.documentElement.classList.contains("dark");
     document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("trove-theme", next ? "dark" : "light");
   }

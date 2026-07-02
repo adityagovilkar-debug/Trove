@@ -57,15 +57,27 @@ export function daysUntil(date: string | null): number | null {
   return Math.ceil(ms / 86_400_000);
 }
 
+// Add months without JS Date overflow: Jan 31 + 1mo must be Feb 28/29, not
+// Mar 2-3 (setMonth would walk month-end payments forward every cycle).
+function addMonthsClamped(d: Date, n: number) {
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+}
+
 // Advance a date by one billing cycle (used by "Mark paid").
 export function advancePayment(
   s: Pick<Subscription, "billing_cycle" | "cycle_days" | "next_payment">,
 ): string | null {
   if (!s.next_payment) return null;
   const d = new Date(s.next_payment + "T00:00:00");
-  if (s.billing_cycle === "monthly") d.setMonth(d.getMonth() + 1);
-  else if (s.billing_cycle === "quarterly") d.setMonth(d.getMonth() + 3);
-  else if (s.billing_cycle === "yearly") d.setFullYear(d.getFullYear() + 1);
+  if (s.billing_cycle === "monthly") addMonthsClamped(d, 1);
+  else if (s.billing_cycle === "quarterly") addMonthsClamped(d, 3);
+  else if (s.billing_cycle === "yearly") addMonthsClamped(d, 12);
   else d.setDate(d.getDate() + cycleDays(s));
-  return d.toISOString().slice(0, 10);
+  // Format in local time — toISOString would shift the date in +UTC timezones.
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

@@ -50,13 +50,12 @@ export const EXPIRY_STYLES: Record<ExpiryBucket, string> = {
 
 export function formatDate(d: string | null | undefined): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString(undefined, {
+  // Date-only strings parse as UTC midnight, which renders as the *previous*
+  // day in negative-UTC timezones. Pin them to local midnight instead.
+  const local = /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + "T00:00:00") : new Date(d);
+  return local.toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
-}
-
-export function titleCase(s: string): string {
-  return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }

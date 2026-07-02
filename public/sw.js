@@ -1,8 +1,19 @@
 // Minimal service worker for PWA installability + a basic offline shell.
 // We use a network-first strategy so data stays fresh, falling back to cache
 // when offline.
-const CACHE = "trove-v1";
-const APP_SHELL = ["/", "/inventory", "/add", "/trends", "/manifest.webmanifest"];
+const CACHE = "trove-v2";
+const APP_SHELL = [
+  "/",
+  "/inventory",
+  "/add",
+  "/trends",
+  "/upcoming",
+  "/shopping",
+  "/recipes",
+  "/subscriptions",
+  "/settings",
+  "/manifest.webmanifest",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
