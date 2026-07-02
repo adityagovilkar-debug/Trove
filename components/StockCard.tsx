@@ -24,6 +24,7 @@ import { prominentAttributes } from "@/lib/domainFields";
 import { packLabel, packTotal } from "@/lib/products";
 import { EditStockDialog } from "./EditStockDialog";
 import { RepurchaseDialog, seedFromLot } from "./RepurchaseDialog";
+import { ConsumeAmountDialog } from "./ConsumeAmountDialog";
 import {
   cn,
   EXPIRY_STYLES,
@@ -38,6 +39,7 @@ export function StockCard({ row }: { row: InventoryDetail }) {
   const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [usingAmount, setUsingAmount] = useState(false);
   const setStatus = useSetStatus();
   const consume = useConsume();
   const del = useDeleteStock();
@@ -177,6 +179,9 @@ export function StockCard({ row }: { row: InventoryDetail }) {
           {menu && (
             <div className="absolute right-0 top-10 z-30 w-44 rounded-xl border bg-surface p-1 shadow-xl">
               <MenuItem icon={Pencil} label="Edit" onClick={() => setEditing(true)} />
+              {isActive && Number(row.quantity) > 0 && (
+                <MenuItem icon={Minus} label="Use amount…" onClick={() => setUsingAmount(true)} />
+              )}
               {!isActive && (
                 <MenuItem
                   icon={RotateCcw}
@@ -205,6 +210,12 @@ export function StockCard({ row }: { row: InventoryDetail }) {
     {editing && <EditStockDialog row={row} onClose={() => setEditing(false)} />}
     {buying && (
       <RepurchaseDialog seed={seedFromLot(row)} onClose={() => setBuying(false)} />
+    )}
+    {usingAmount && (
+      <ConsumeAmountDialog
+        lot={{ id: row.id, name: row.item_name, quantity: Number(row.quantity), unit: row.unit }}
+        onClose={() => setUsingAmount(false)}
+      />
     )}
     </>
   );

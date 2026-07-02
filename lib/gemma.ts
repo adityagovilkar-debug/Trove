@@ -10,6 +10,7 @@
 // Docs: https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/web_js
 
 import type { NutritionResult } from "./nutritionParse";
+import type { ReceiptItem } from "./receiptParse";
 
 const MODEL_URL = process.env.NEXT_PUBLIC_GEMMA_MODEL_URL;
 const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/wasm";
@@ -38,7 +39,7 @@ function getModel(onProgress?: (msg: string) => void) {
       const fileset = await FilesetResolver.forGenAiTasks(WASM_BASE);
       const llm = await LlmInference.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL_URL! },
-        maxTokens: 512,
+        maxTokens: 1536, // headroom for a whole receipt's worth of line items
         topK: 1,
         temperature: 0,
       });
@@ -85,6 +86,50 @@ export async function parseNutritionWithGemma(
       (result as Record<string, string>)[k] = String(v).trim();
     }
     return result;
+  } catch {
+    return null;
+  }
+}
+
+const RECEIPT_PROMPT = (text: string) =>
+  `You extract purchased line items from the OCR text of a grocery receipt.
+Return ONLY a compact JSON array. Each element: {"name": string, "quantity": number|null, "price": number|null}.
+- name: the product, cleaned up and title-cased (drop item codes and quantity/price columns).
+- quantity: units purchased if shown (e.g. "2 x"), else null.
+- price: the line total as a number, else null.
+Ignore totals, tax, discounts, payment, and store/header/footer lines.
+
+Receipt text:
+"""${text}"""
+
+JSON:`;
+
+// Parse a receipt with Gemma; returns null if unavailable or no valid JSON
+// (caller then uses the heuristic parser).
+export async function parseReceiptWithGemma(
+  rawText: string,
+  onProgress?: (msg: string) => void,
+): Promise<ReceiptItem[] | null> {
+  if (!gemmaConfigured()) return null;
+  try {
+    const llm = await getModel(onProgress);
+    onProgress?.("Reading items…");
+    const reply = await llm.generateResponse(RECEIPT_PROMPT(rawText));
+    const match = reply.match(/\[[\s\S]*\]/);
+    if (!match) return null;
+    const arr = JSON.parse(match[0]) as unknown;
+    if (!Array.isArray(arr)) return null;
+    return arr
+      .map((r) => {
+        const o = r as Record<string, unknown>;
+        const name = String(o.name ?? "").trim();
+        return {
+          name,
+          quantity: o.quantity != null && o.quantity !== "" ? Number(o.quantity) : null,
+          price: o.price != null && o.price !== "" ? Number(o.price) : null,
+        };
+      })
+      .filter((r) => r.name.length > 1);
   } catch {
     return null;
   }

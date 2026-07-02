@@ -30,6 +30,7 @@ import {
   totalMinutes,
   findLotForIngredient,
 } from "@/lib/recipes";
+import { shoppingQtyForIngredient } from "@/lib/units";
 import { RecipeEditor } from "@/components/RecipeEditor";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -86,15 +87,23 @@ export default function RecipeDetailPage() {
   const effectiveTarget = target ?? base;
   const factor = effectiveTarget / base;
 
-  // Missing ingredients as shopping inputs, scaled to the chosen servings.
+  // Missing ingredients as shopping inputs, scaled to the chosen servings and
+  // translated into purchasable quantities (a 1 kg bag, not "2 cups").
   function missingInputs() {
-    return (match?.missing ?? []).map((i) => ({
-      name: i.name,
-      quantity: i.quantity != null ? Math.round(i.quantity * factor * 100) / 100 : null,
-      unit: i.unit,
-      itemId: i.item_id,
-      source: "recipe" as const,
-    }));
+    return (match?.missing ?? []).map((i) => {
+      const scaled = {
+        ...i,
+        quantity: i.quantity != null ? Math.round(i.quantity * factor * 100) / 100 : null,
+      };
+      const { quantity, unit } = shoppingQtyForIngredient(scaled, active);
+      return {
+        name: i.name,
+        quantity,
+        unit,
+        itemId: i.item_id,
+        source: "recipe" as const,
+      };
+    });
   }
 
   function addMissing() {

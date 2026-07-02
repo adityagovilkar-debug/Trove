@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ScanLine, Loader2 } from "lucide-react";
+import { ScanLine, Loader2, Receipt, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAddStock, useRefData } from "@/lib/queries";
 import { lookupBarcode, lookupBook } from "@/lib/barcode";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { ReceiptScanner } from "@/components/ReceiptScanner";
 import { AttributeFields } from "@/components/AttributeFields";
 import { ProductSearch } from "@/components/ProductSearch";
 import { locationOptions } from "@/lib/locations";
@@ -21,6 +22,7 @@ export default function AddPage() {
   const addStock = useAddStock();
 
   const [scanning, setScanning] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
 
   // form state
@@ -135,6 +137,7 @@ export default function AddPage() {
       {scanning && (
         <BarcodeScanner onDetect={handleScanned} onClose={() => setScanning(false)} />
       )}
+      {receiptOpen && <ReceiptScanner onClose={() => setReceiptOpen(false)} />}
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Add stock</h1>
@@ -142,6 +145,24 @@ export default function AddPage() {
           Scan a barcode to auto-fill, or type it in.
         </p>
       </div>
+
+      {/* Bulk entry: whole receipt at once */}
+      <button
+        type="button"
+        onClick={() => setReceiptOpen(true)}
+        className="card mb-5 flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-surface-2"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+          <Receipt className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium">Scan a receipt</span>
+          <span className="block text-xs text-text-muted">
+            Add a whole shopping trip in one go
+          </span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-text-muted" />
+      </button>
 
       <form onSubmit={(e) => onSubmit(e, false)} className="space-y-5">
         {/* Domain selector */}
