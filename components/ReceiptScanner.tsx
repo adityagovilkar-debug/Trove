@@ -6,7 +6,7 @@ import { X, Receipt, Loader2, Plus, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAddStock, useRefData } from "@/lib/queries";
 import { parseReceiptText, type ReceiptItem } from "@/lib/receiptParse";
-import { gemmaConfigured, parseReceiptWithGemma } from "@/lib/gemma";
+import { gemmaConfigured, parseReceiptImageWithGemma } from "@/lib/gemma";
 import { locationOptions } from "@/lib/locations";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -47,28 +47,33 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
     if (!file) return;
     setBusy(true);
     try {
-      setStatus("Reading receipt…");
-      const Tesseract = (await import("tesseract.js")).default;
-      const {
-        data: { text },
-      } = await Tesseract.recognize(file, "eng", {
-        logger: (m: { status: string; progress: number }) => {
-          if (m.status === "recognizing text")
-            setStatus(`Reading receipt… ${Math.round(m.progress * 100)}%`);
-        },
-      });
-      if (!text.trim()) {
-        toast.error("Couldn't read the receipt — try a flatter, brighter photo.");
-        return;
-      }
-
       let items: ReceiptItem[] | null = null;
+
+      // Preferred path: hand the photo straight to Gemma's vision — no OCR.
       if (gemmaConfigured()) {
         setSmart(true);
-        setStatus("Understanding items…");
-        items = await parseReceiptWithGemma(text, setStatus);
+        setStatus("Reading the receipt…");
+        items = await parseReceiptImageWithGemma(file, setStatus);
       }
-      if (!items || items.length === 0) items = parseReceiptText(text);
+
+      // Fallback (no WebGPU / model, or vision came up empty): OCR + heuristic.
+      if (!items || items.length === 0) {
+        setStatus("Reading receipt…");
+        const Tesseract = (await import("tesseract.js")).default;
+        const {
+          data: { text },
+        } = await Tesseract.recognize(file, "eng", {
+          logger: (m: { status: string; progress: number }) => {
+            if (m.status === "recognizing text")
+              setStatus(`Reading receipt… ${Math.round(m.progress * 100)}%`);
+          },
+        });
+        if (!text.trim()) {
+          toast.error("Couldn't read the receipt — try a flatter, brighter photo.");
+          return;
+        }
+        items = parseReceiptText(text);
+      }
 
       if (!items.length) {
         toast.message("Read the receipt but couldn't pick out line items. Add them manually.");

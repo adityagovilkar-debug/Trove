@@ -8,7 +8,7 @@ import {
   countFilled,
   type NutritionResult,
 } from "@/lib/nutritionParse";
-import { gemmaConfigured, parseNutritionWithGemma } from "@/lib/gemma";
+import { gemmaConfigured, parseNutritionImageWithGemma } from "@/lib/gemma";
 import { cn } from "@/lib/utils";
 
 type Method = "gemma" | "heuristic";
@@ -39,35 +39,35 @@ export function ScanLabelButton({
 
     setBusy(true);
     try {
-      // 1) On-device OCR
-      setStatus("Reading label…");
-      const Tesseract = (await import("tesseract.js")).default;
-      const {
-        data: { text },
-      } = await Tesseract.recognize(file, "eng", {
-        logger: (m: { status: string; progress: number }) => {
-          if (m.status === "recognizing text")
-            setStatus(`Reading label… ${Math.round(m.progress * 100)}%`);
-        },
-      });
-
-      if (!text.trim()) {
-        toast.error("Couldn't read any text — try a clearer, closer photo.");
-        return;
-      }
-
-      // 2) Structure it: Gemma 4 on-device if available, else heuristic.
       let parsed: NutritionResult | null = null;
       let method: Method = "heuristic";
+
+      // Preferred path: hand the photo straight to Gemma's vision — no OCR.
       if (gemmaConfigured()) {
-        setStatus("Understanding values…");
-        const g = await parseNutritionWithGemma(text, setStatus);
+        setStatus("Reading the label…");
+        const g = await parseNutritionImageWithGemma(file, setStatus);
         if (g && countFilled(g) > 0) {
           parsed = g;
           method = "gemma";
         }
       }
+
+      // Fallback (no WebGPU / model, or vision came up empty): OCR + heuristic.
       if (!parsed || countFilled(parsed) === 0) {
+        setStatus("Reading label…");
+        const Tesseract = (await import("tesseract.js")).default;
+        const {
+          data: { text },
+        } = await Tesseract.recognize(file, "eng", {
+          logger: (m: { status: string; progress: number }) => {
+            if (m.status === "recognizing text")
+              setStatus(`Reading label… ${Math.round(m.progress * 100)}%`);
+          },
+        });
+        if (!text.trim()) {
+          toast.error("Couldn't read the label — try a clearer, closer photo.");
+          return;
+        }
         parsed = parseNutritionText(text);
         method = "heuristic";
       }
@@ -136,8 +136,8 @@ export function ScanLabelButton({
           )}
           title={
             badge.smart
-              ? "Nutrition text is structured by Gemma 4 running on-device (WebGPU)."
-              : "Set NEXT_PUBLIC_GEMMA_MODEL_URL and use a WebGPU browser for Gemma 4. The built-in parser is used otherwise."
+              ? "Gemma 4 reads the label photo directly, on-device (WebGPU) — no OCR."
+              : "Set NEXT_PUBLIC_GEMMA_MODEL_URL and use a WebGPU browser for Gemma 4. The built-in OCR parser is used otherwise."
           }
         >
           {badge.smart ? (
