@@ -9,21 +9,37 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
-  const { subscription } = await request.json();
+  const { subscription, householdId } = await request.json();
   if (!subscription?.endpoint || !subscription?.keys)
     return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
 
-  const { data: member } = await supabase
-    .from("household_members")
-    .select("household_id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Trust the client-supplied active household only if the user is actually a
+  // member of it; otherwise fall back to their first membership.
+  let resolvedHouseholdId: string | null = null;
+  if (householdId) {
+    const { data: valid } = await supabase
+      .from("household_members")
+      .select("household_id")
+      .eq("user_id", user.id)
+      .eq("household_id", householdId)
+      .limit(1)
+      .maybeSingle();
+    resolvedHouseholdId = valid?.household_id ?? null;
+  }
+  if (!resolvedHouseholdId) {
+    const { data: member } = await supabase
+      .from("household_members")
+      .select("household_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    resolvedHouseholdId = member?.household_id ?? null;
+  }
 
   const { error } = await supabase.from("push_subscriptions").upsert(
     {
-      household_id: member?.household_id ?? null,
+      household_id: resolvedHouseholdId,
       user_id: user.id,
       endpoint: subscription.endpoint,
       p256dh: subscription.keys.p256dh,

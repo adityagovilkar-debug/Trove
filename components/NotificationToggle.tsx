@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
+import { useHouseholdId } from "@/lib/queries";
 
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -16,6 +17,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function NotificationToggle() {
+  const { data: householdId } = useHouseholdId();
   const [supported, setSupported] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,7 +52,7 @@ export function NotificationToggle() {
       const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub }),
+        body: JSON.stringify({ subscription: sub, householdId }),
       });
       if (!res.ok) throw new Error();
       setSubscribed(true);

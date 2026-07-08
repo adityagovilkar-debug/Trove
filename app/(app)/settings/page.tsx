@@ -5,19 +5,23 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, Trash2, Check, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { useHouseholdId, useRefData } from "@/lib/queries";
+import { useHouseholdId, useHouseholds, useRefData } from "@/lib/queries";
 import { NotificationToggle } from "@/components/NotificationToggle";
 import { LocationManager } from "@/components/LocationManager";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
+import { HouseholdSwitcher } from "@/components/HouseholdSwitcher";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 
 export default function SettingsPage() {
   const qc = useQueryClient();
   const { data: householdId } = useHouseholdId();
+  const { data: households = [] } = useHouseholds();
   const { data: ref } = useRefData();
   const [copied, setCopied] = useState(false);
   const [joinCode, setJoinCode] = useState("");
+  const activeHouseholdName =
+    households.find((h) => h.household_id === householdId)?.name ?? ref?.household.name;
 
   const members = useQuery({
     queryKey: ["members", householdId],
@@ -63,6 +67,14 @@ export default function SettingsPage() {
       .from("household_members")
       .insert({ household_id: code, user_id: auth.user!.id, role: "member" });
     if (error) return toast.error("Couldn't join — check the code.");
+    // Make the newly joined household the active one, so the page that
+    // reloads next actually shows what was just joined instead of whichever
+    // household happened to be created first.
+    try {
+      localStorage.setItem("trove-active-household", code);
+    } catch {
+      // best-effort
+    }
     toast.success("Joined household! Reloading…");
     qc.clear();
     setTimeout(() => window.location.reload(), 600);
@@ -84,6 +96,16 @@ export default function SettingsPage() {
       {/* Household */}
       <section className="card space-y-4 p-5">
         <h2 className="font-semibold">Household</h2>
+
+        {households.length > 1 && (
+          <div className="rounded-xl border bg-surface-2/50 p-3">
+            <p className="mb-2 text-xs text-text-muted">
+              You're in more than one household — choose which one you're viewing.
+            </p>
+            <HouseholdSwitcher />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Name</label>
@@ -117,6 +139,7 @@ export default function SettingsPage() {
           </div>
           <p className="mt-1 text-xs text-text-muted">
             Anyone you give this code to can join and share your inventory.
+            {activeHouseholdName && ` Sharing the code for “${activeHouseholdName}”.`}
           </p>
         </div>
 

@@ -80,8 +80,19 @@ async function maybeAutoShop(
 
 // ---------------------------------------------------------------------------
 // Household resolution — every query is scoped to the signed-in user's
-// household. We resolve it once and cache it.
+// ACTIVE household. A user can belong to more than one (e.g. their own
+// personal household seeded at signup, plus one they joined by share code);
+// the active one is remembered per-device in localStorage and can be switched
+// on the fly via useSwitchHousehold().
 // ---------------------------------------------------------------------------
+const ACTIVE_HOUSEHOLD_KEY = "trove-active-household";
+
+export interface HouseholdMembership {
+  household_id: string;
+  role: string;
+  name: string;
+}
+
 export function useHouseholdId() {
   return useQuery({
     queryKey: ["household-id"],
@@ -94,13 +105,63 @@ export function useHouseholdId() {
         .from("household_members")
         .select("household_id")
         .eq("user_id", auth.user.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .single();
+        .order("created_at", { ascending: true });
       if (error) throw error;
-      return data.household_id as string;
+      const ids = (data ?? []).map((m) => m.household_id as string);
+      if (ids.length === 0) throw new Error("No household");
+      // Prefer the remembered active household, if still a member of it.
+      try {
+        const stored = localStorage.getItem(ACTIVE_HOUSEHOLD_KEY);
+        if (stored && ids.includes(stored)) return stored;
+      } catch {
+        // localStorage unavailable (SSR/privacy mode) — fall through
+      }
+      return ids[0];
     },
   });
+}
+
+// All households the signed-in user belongs to — powers the household
+// switcher. Renders nothing when there's only one (the common case).
+export function useHouseholds() {
+  return useQuery({
+    queryKey: ["households"],
+    staleTime: 60_000,
+    queryFn: async (): Promise<HouseholdMembership[]> => {
+      const sb = supabaseBrowser();
+      const { data: auth } = await sb.auth.getUser();
+      if (!auth.user) throw new Error("Not signed in");
+      const { data, error } = await sb
+        .from("household_members")
+        .select("household_id, role, created_at, households(name)")
+        .eq("user_id", auth.user.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((m) => {
+        const hh = m.households as unknown;
+        const name = Array.isArray(hh)
+          ? ((hh[0] as { name?: string } | undefined)?.name ?? "Household")
+          : ((hh as { name?: string } | null)?.name ?? "Household");
+        return { household_id: m.household_id as string, role: m.role as string, name };
+      });
+    },
+  });
+}
+
+// Switch the active household: persist the choice, swap the resolved id in
+// the cache, and refetch everything (every data hook keys on household id, so
+// this alone re-populates the whole app for the new household).
+export function useSwitchHousehold() {
+  const qc = useQueryClient();
+  return (householdId: string) => {
+    try {
+      localStorage.setItem(ACTIVE_HOUSEHOLD_KEY, householdId);
+    } catch {
+      // best-effort; the switch still works for this session via setQueryData
+    }
+    qc.setQueryData(["household-id"], householdId);
+    qc.invalidateQueries();
+  };
 }
 
 // ---------------------------------------------------------------------------

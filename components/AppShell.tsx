@@ -19,6 +19,7 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import { TroveMark } from "./TroveMark";
+import { HouseholdSwitcher } from "./HouseholdSwitcher";
 import { CheckHaveSearch } from "./CheckHaveSearch";
 import { CommandPalette } from "./CommandPalette";
 import { SyncStatus } from "./SyncStatus";
@@ -89,6 +90,9 @@ export function AppShell({
         </nav>
 
         <div className="mt-4 border-t pt-4">
+          <div className="mb-2 px-2">
+            <HouseholdSwitcher />
+          </div>
           <div className="mb-2 flex items-center justify-between px-2">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{name}</p>
