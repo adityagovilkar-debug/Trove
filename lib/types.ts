@@ -10,6 +10,8 @@ export interface Household {
   created_at: string;
 }
 
+export type Space = "kitchen" | "home";
+
 export interface Domain {
   id: string;
   household_id: string;
@@ -18,6 +20,7 @@ export interface Domain {
   icon: string | null;
   has_expiry: boolean;
   sort_order: number;
+  space?: Space; // optional until migration 0013 has run
 }
 
 export interface Category {
@@ -89,6 +92,7 @@ export interface InventoryDetail {
   store_id: string | null;
   store_name: string | null;
   days_to_expiry: number | null;
+  domain_space?: Space | null; // optional until migration 0013 has run
 }
 
 export type BillingCycle =

@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { SkeletonRows } from "@/components/Skeleton";
 import { PackageOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { rowSpace, domainSpace } from "@/lib/space";
 import type { InventoryStatus } from "@/lib/types";
 
 const STATUS_TABS: { key: InventoryStatus | "all"; label: string }[] = [
@@ -31,18 +32,27 @@ function InventoryInner() {
   const { data: ref } = useRefData();
   const { data: rows = [], isLoading } = useInventory({ status, domainId, search });
 
+  // This page is the Kitchen space's stock — food only. Durables live in
+  // the Home space's Things view.
+  const kitchenDomains = useMemo(
+    () => (ref?.domains ?? []).filter((d) => domainSpace(d) === "kitchen"),
+    [ref?.domains],
+  );
+
   const visible = useMemo(() => {
-    if (!expiringOnly) return rows;
-    return rows.filter((r) => r.days_to_expiry != null && r.days_to_expiry <= 7);
+    let r = rows.filter((x) => rowSpace(x) === "kitchen");
+    if (expiringOnly)
+      r = r.filter((x) => x.days_to_expiry != null && x.days_to_expiry <= 7);
+    return r;
   }, [rows, expiringOnly]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Inventory</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Pantry</h1>
           <p className="text-sm text-text-muted">
-            {expiringOnly ? "Showing items expiring within a week." : "Everything you own."}
+            {expiringOnly ? "Showing food expiring within a week." : "All the food in the house."}
           </p>
         </div>
         <Link href="/add" className="btn-primary">
@@ -80,12 +90,12 @@ function InventoryInner() {
             className="input pl-10"
           />
         </div>
-        {ref && ref.domains.length > 0 && (
+        {kitchenDomains.length > 1 && (
           <div className="flex flex-wrap gap-2">
             <FilterChip active={domainId === null} onClick={() => setDomainId(null)}>
               All types
             </FilterChip>
-            {ref.domains.map((d) => (
+            {kitchenDomains.map((d) => (
               <FilterChip
                 key={d.id}
                 active={domainId === d.id}

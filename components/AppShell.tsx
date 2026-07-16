@@ -17,30 +17,49 @@ import {
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
+import { SpaceProvider, useSpace } from "@/lib/space";
 import { ThemeToggle } from "./ThemeToggle";
 import { TroveMark } from "./TroveMark";
 import { HouseholdSwitcher } from "./HouseholdSwitcher";
+import { SpaceToggle } from "./SpaceToggle";
 import { CheckHaveSearch } from "./CheckHaveSearch";
 import { CommandPalette } from "./CommandPalette";
 import { SyncStatus } from "./SyncStatus";
 
-const NAV = [
+// Each space is "its own app": a distinct nav set and dashboard. Search (⌘K +
+// the header bar) and Settings stay global.
+const KITCHEN_NAV = [
   { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
   { href: "/upcoming", label: "Upcoming", short: "Soon", icon: CalendarClock, mobile: true },
-  { href: "/inventory", label: "Inventory", short: "Stock", icon: Boxes, mobile: true },
+  { href: "/inventory", label: "Pantry", short: "Stock", icon: Boxes, mobile: true },
   { href: "/recipes", label: "Recipes", short: "Cook", icon: ChefHat, mobile: true },
   { href: "/shopping", label: "Shopping", short: "List", icon: ShoppingCart, mobile: true },
-  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: false },
   { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: false },
   { href: "/trends", label: "Trends", short: "Trends", icon: LineChart, mobile: false },
   { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },
 ];
 
-// Mobile bottom bar shows the 5 most-used; the rest are reachable via the
-// sidebar (desktop) and the ⌘K command palette.
-const MOBILE_NAV = NAV.filter((n) => n.mobile);
+const HOME_NAV = [
+  { href: "/home", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
+  { href: "/things", label: "Things", short: "Things", icon: Boxes, mobile: true },
+  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: true },
+  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: true },
+  { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: true },
+];
 
-export function AppShell({
+export function AppShell(props: {
+  email: string;
+  name: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <SpaceProvider>
+      <AppShellInner {...props} />
+    </SpaceProvider>
+  );
+}
+
+function AppShellInner({
   email,
   name,
   children,
@@ -51,6 +70,9 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { space } = useSpace();
+  const NAV = space === "kitchen" ? KITCHEN_NAV : HOME_NAV;
+  const MOBILE_NAV = NAV.filter((n) => n.mobile);
 
   function isActive(href: string, exact?: boolean) {
     return exact ? pathname === href : pathname.startsWith(href) && href !== "/";
@@ -66,9 +88,13 @@ export function AppShell({
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r bg-surface p-4 md:flex">
-        <div className="mb-6 flex items-center gap-2 px-2">
+        <div className="mb-3 flex items-center gap-2 px-2">
           <TroveMark className="h-9 w-9 rounded-xl" />
           <span className="wordmark text-lg font-semibold tracking-tight">Trove</span>
+        </div>
+
+        <div className="mb-4 px-2">
+          <SpaceToggle />
         </div>
 
         <nav className="flex flex-1 flex-col gap-1">
@@ -116,6 +142,7 @@ export function AppShell({
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-bg/80 px-4 py-3 backdrop-blur md:px-8">
           <div className="flex items-center gap-2 md:hidden">
             <TroveMark className="h-8 w-8 rounded-lg" />
+            <SpaceToggle compact />
           </div>
           <div className="flex-1">
             <CheckHaveSearch />

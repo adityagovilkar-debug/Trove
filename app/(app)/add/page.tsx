@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScanLine, Loader2, Receipt, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { ReceiptScanner } from "@/components/ReceiptScanner";
 import { AttributeFields } from "@/components/AttributeFields";
 import { ProductSearch } from "@/components/ProductSearch";
 import { locationOptions } from "@/lib/locations";
+import { useSpace, domainSpace } from "@/lib/space";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
 const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
@@ -46,6 +47,16 @@ export default function AddPage() {
 
   const currency = ref?.household.base_currency ?? "INR";
   const selectedDomain = ref?.domains.find((d) => d.id === domainId);
+  const { space } = useSpace();
+
+  // Default the type to match the space you're adding from: Kitchen → the
+  // grocery domain, Home → the first home-space domain. Only while nothing
+  // is picked yet — never override a choice.
+  useEffect(() => {
+    if (domainId || !ref?.domains?.length) return;
+    const def = ref.domains.find((d) => domainSpace(d) === space);
+    if (def) setDomainId(def.id);
+  }, [domainId, ref?.domains, space]);
   const showExpiry = selectedDomain?.has_expiry ?? true;
   const categories = useMemo(
     () =>

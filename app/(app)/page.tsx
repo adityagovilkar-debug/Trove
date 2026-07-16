@@ -10,7 +10,6 @@ import {
   ShoppingBasket,
   Clock,
   Wallet,
-  CreditCard,
   ShoppingCart,
   Plus,
   ScanText,
@@ -19,25 +18,22 @@ import {
   TriangleAlert,
   AlertCircle,
   Minus,
-  Check,
   ChefHat,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useInventory,
   useTrendsData,
-  useSubscriptions,
   useShoppingList,
   useAddShoppingItems,
   useConsume,
-  useMarkSubscriptionPaid,
   useMealPlans,
 } from "@/lib/queries";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { buildUpcoming } from "@/lib/upcoming";
 import { computeRestock, type RestockSuggestion } from "@/lib/restock";
 import { groupIntoProducts } from "@/lib/products";
-import { monthlyCost } from "@/lib/subscriptions";
+import { rowSpace } from "@/lib/space";
 import { cn, formatMoney } from "@/lib/utils";
 
 function greeting() {
@@ -59,16 +55,22 @@ function dueColor(d: number) {
   return "text-text-muted";
 }
 
+// The Kitchen dashboard: the churny half of the house — food stock, expiries,
+// what to buy, what you can cook. Durables and payments live in the Home space.
 export default function DashboardPage() {
-  const { data: active = [], isLoading: la } = useInventory({ status: "active" });
-  const { data: history = [], isLoading: lh } = useTrendsData();
-  const { data: subs = [] } = useSubscriptions();
+  const { data: allActive = [], isLoading: la } = useInventory({ status: "active" });
+  const { data: allHistory = [], isLoading: lh } = useTrendsData();
   const { data: meals = [] } = useMealPlans();
   const { data: shopping = [] } = useShoppingList();
   const addShopping = useAddShoppingItems();
   const consume = useConsume();
-  const markPaid = useMarkSubscriptionPaid();
   const [firstName, setFirstName] = useState("");
+
+  const active = useMemo(() => allActive.filter((r) => rowSpace(r) === "kitchen"), [allActive]);
+  const history = useMemo(
+    () => allHistory.filter((r) => rowSpace(r) === "kitchen"),
+    [allHistory],
+  );
 
   useEffect(() => {
     supabaseBrowser()
@@ -81,7 +83,6 @@ export default function DashboardPage() {
   }, []);
 
   const month = new Date().toISOString().slice(0, 7);
-  const activeSubs = subs.filter((s) => s.status === "active");
 
   const stats = useMemo(() => {
     const expiring = active.filter(
@@ -93,7 +94,7 @@ export default function DashboardPage() {
     const spentThisMonth = history
       .filter((r) => r.purchase_date.startsWith(month))
       .reduce((s, r) => s + Number(r.price ?? 0), 0);
-    const subsMonthly = activeSubs.reduce((s, x) => s + monthlyCost(x), 0);
+    const toBuy = shopping.filter((s) => !s.is_bought).length;
     let used = 0,
       wasted = 0;
     for (const r of history) {
@@ -101,31 +102,21 @@ export default function DashboardPage() {
       else if (r.status === "expired" || r.status === "discarded") wasted++;
     }
     const usedPct = used + wasted > 0 ? Math.round((used / (used + wasted)) * 100) : null;
-    return { expiring, expired, spentThisMonth, subsMonthly, usedPct };
-  }, [active, history, activeSubs, month]);
+    return { expiring, expired, spentThisMonth, toBuy, usedPct };
+  }, [active, history, shopping, month]);
 
-  const currency = active[0]?.currency ?? subs[0]?.currency ?? "INR";
+  const currency = active[0]?.currency ?? "INR";
+  // Kitchen upcoming = expiries + planned meals. Payments and warranties
+  // belong to the Home space dashboard.
   const upcoming = useMemo(
-    () => buildUpcoming(active, subs, meals).slice(0, 5),
-    [active, subs, meals],
+    () =>
+      buildUpcoming(active, [], meals)
+        .filter((e) => e.kind !== "warranty")
+        .slice(0, 5),
+    [active, meals],
   );
 
-  // Groceries are the thing that turns over constantly, so the headline metric
-  // is grocery-specific; durables (electronics, books) show in the breakdown.
-  const byType = useMemo(() => {
-    const groups = groupIntoProducts(active);
-    const counts = new Map<string, { id: string | null; name: string; count: number }>();
-    let grocery = 0;
-    for (const g of groups) {
-      const key = g.domainId ?? "none";
-      const cur = counts.get(key) ?? { id: g.domainId, name: g.domainName ?? "Other", count: 0 };
-      cur.count += 1;
-      counts.set(key, cur);
-      if (g.domainKey === "grocery") grocery += 1;
-    }
-    const list = [...counts.values()].sort((a, b) => b.count - a.count);
-    return { grocery, list, total: groups.length };
-  }, [active]);
+  const groceryCount = useMemo(() => groupIntoProducts(active).length, [active]);
 
   const pendingNames = useMemo(
     () => new Set(shopping.filter((s) => !s.is_bought).map((s) => s.name.toLowerCase())),
@@ -154,16 +145,10 @@ export default function DashboardPage() {
   const isLoading = la || lh;
   const g = greeting();
 
-  // Attention banner content
+  // Attention banner content (food urgency only — payments live in Home).
   const attentionBits: string[] = [];
   if (stats.expired > 0) attentionBits.push(`${stats.expired} expired`);
   if (stats.expiring > 0) attentionBits.push(`${stats.expiring} expiring this week`);
-  const dueSoon = activeSubs.filter((s) => {
-    if (!s.next_payment) return false;
-    const d = Math.ceil((+new Date(s.next_payment + "T00:00:00") - Date.now()) / 86_400_000);
-    return d <= 3;
-  });
-  if (dueSoon.length > 0) attentionBits.push(`${dueSoon.length} payment${dueSoon.length > 1 ? "s" : ""} due soon`);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -176,10 +161,9 @@ export default function DashboardPage() {
             {firstName ? `, ${firstName}` : ""}
           </h1>
           <p className="mt-1 text-sm text-text-muted">
-            {byType.grocery} groceries in stock
+            {groceryCount} groceries in stock
             {stats.usedPct != null && ` · ${stats.usedPct}% used before waste`}
-            {activeSubs.length > 0 &&
-              ` · ${formatMoney(stats.subsMonthly, currency)}/mo in subscriptions`}
+            {stats.toBuy > 0 && ` · ${stats.toBuy} on the shopping list`}
           </p>
         </div>
         <Link href="/add" className="btn-primary shrink-0">
@@ -202,29 +186,13 @@ export default function DashboardPage() {
         </Link>
       )}
 
-      {/* Metric cards — grocery-first */}
+      {/* Metric cards — the food loop */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={ShoppingBasket} label="Groceries in stock" value={byType.grocery} />
+        <Stat icon={ShoppingBasket} label="Groceries in stock" value={groceryCount} />
         <Stat icon={Clock} label="Expiring ≤ 7d" value={stats.expiring} tone={stats.expiring ? "amber" : undefined} />
         <Stat icon={Wallet} label="Spent this month" value={formatMoney(stats.spentThisMonth, currency)} />
-        <Stat icon={CreditCard} label="Subscriptions / mo" value={formatMoney(stats.subsMonthly, currency)} />
+        <Stat icon={ShoppingCart} label="To buy" value={stats.toBuy} />
       </div>
-
-      {/* Everything you own, by type — durables stay visible without dominating */}
-      {byType.list.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-text-muted">By type:</span>
-          {byType.list.map((d) => (
-            <Link
-              key={d.name}
-              href={d.id ? `/inventory?domain=${d.id}` : "/inventory"}
-              className="chip bg-surface-2 text-text-muted ring-border ring-inset transition-colors hover:text-text"
-            >
-              {d.name} <span className="font-semibold text-text">{d.count}</span>
-            </Link>
-          ))}
-        </div>
-      )}
 
       {/* Two-column: upcoming + running low */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -247,18 +215,12 @@ export default function DashboardPage() {
                   <div
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                      ev.kind === "subscription"
-                        ? "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"
-                        : ev.kind === "warranty"
-                          ? "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
-                          : ev.kind === "meal"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+                      ev.kind === "meal"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
                     )}
                   >
-                    {ev.kind === "subscription" ? (
-                      <CreditCard className="h-4 w-4" />
-                    ) : ev.kind === "meal" ? (
+                    {ev.kind === "meal" ? (
                       <ChefHat className="h-4 w-4" />
                     ) : (
                       <Clock className="h-4 w-4" />
@@ -269,9 +231,6 @@ export default function DashboardPage() {
                     <p className="truncate text-xs text-text-muted">{ev.subtitle}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    {ev.amount != null && (
-                      <p className="text-xs font-medium">{formatMoney(ev.amount, ev.currency ?? currency)}</p>
-                    )}
                     <p className={cn("text-xs font-medium", dueColor(ev.days))}>{dueLabel(ev.days)}</p>
                   </div>
                   <button
@@ -281,18 +240,14 @@ export default function DashboardPage() {
                           { id: ev.inventory.id, quantity: Number(ev.inventory.quantity) },
                           { onSuccess: () => toast.success(`Used 1 ${ev.title}`) },
                         );
-                      else if (ev.kind === "subscription" && ev.subscription)
-                        markPaid.mutate(ev.subscription, {
-                          onSuccess: () => toast.success(`Recorded payment for ${ev.title}`),
-                        });
                     }}
                     className={cn(
                       "btn-ghost shrink-0 px-2 py-1.5",
-                      (ev.kind === "warranty" || ev.kind === "meal") && "invisible",
+                      ev.kind !== "expiry" && "invisible",
                     )}
-                    title={ev.kind === "subscription" ? "Mark paid" : "Use one"}
+                    title="Use one"
                   >
-                    {ev.kind === "subscription" ? <Check className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                    <Minus className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -357,7 +312,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <QuickAction href="/add" icon={ScanText} label="Add / scan" />
         <QuickAction href="/shopping" icon={ShoppingCart} label="Shopping list" />
-        <QuickAction href="/subscriptions" icon={CreditCard} label="Subscriptions" />
+        <QuickAction href="/recipes" icon={ChefHat} label="Recipes" />
         <button
           onClick={() => window.dispatchEvent(new Event("trove:command"))}
           className="card flex items-center justify-center gap-2 p-3 text-sm font-medium hover:bg-surface-2"

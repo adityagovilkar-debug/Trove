@@ -17,9 +17,12 @@ import {
   LogOut,
   MapPin,
   CornerDownLeft,
+  Home,
+  CookingPot,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useStockSearch } from "@/lib/queries";
+import { useSpace } from "@/lib/space";
 import { cn } from "@/lib/utils";
 
 interface Action {
@@ -34,6 +37,7 @@ interface Action {
 // Also opens on a window "trove:command" event (fired by the header button).
 export function CommandPalette() {
   const router = useRouter();
+  const { space, setSpace } = useSpace();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
@@ -109,9 +113,21 @@ export function CommandPalette() {
 
   const actions: Action[] = useMemo(
     () => [
-      { id: "dash", label: "Dashboard", icon: LayoutDashboard, run: () => go("/") },
+      {
+        id: "space",
+        label: space === "kitchen" ? "Switch to Home space" : "Switch to Kitchen space",
+        icon: space === "kitchen" ? Home : CookingPot,
+        run: () => {
+          const next = space === "kitchen" ? "home" : "kitchen";
+          setSpace(next);
+          go(next === "kitchen" ? "/" : "/home");
+        },
+      },
+      { id: "dash", label: "Kitchen dashboard", icon: LayoutDashboard, run: () => go("/") },
+      { id: "homedash", label: "Home dashboard", icon: Home, run: () => go("/home") },
       { id: "up", label: "Upcoming", icon: CalendarClock, run: () => go("/upcoming") },
-      { id: "inv", label: "Inventory", icon: Boxes, run: () => go("/inventory") },
+      { id: "inv", label: "Pantry", icon: Boxes, run: () => go("/inventory") },
+      { id: "things", label: "Things", icon: Boxes, run: () => go("/things") },
       { id: "recipes", label: "Recipes", icon: ChefHat, run: () => go("/recipes") },
       { id: "shop", label: "Shopping list", icon: ShoppingCart, run: () => go("/shopping") },
       { id: "add", label: "Add stock", icon: PlusCircle, run: () => go("/add") },
@@ -122,7 +138,7 @@ export function CommandPalette() {
       { id: "out", label: "Sign out", icon: LogOut, run: signOut },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [space],
   );
 
   const q = query.trim().toLowerCase();
