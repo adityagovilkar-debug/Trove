@@ -195,11 +195,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Locations (nested) */}
-      <LocationManager
-        locations={ref?.locations ?? []}
-        onAdd={(name, parentId) => addRef("locations", { name, parent_id: parentId })}
-        onDelete={(id) => deleteRef("locations", id)}
-      />
+      <LocationManager />
 
       {/* Categories */}
       <EditableList

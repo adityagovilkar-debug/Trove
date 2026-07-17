@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useAddStock, useRefData } from "@/lib/queries";
 import { parseReceiptText, type ReceiptItem } from "@/lib/receiptParse";
 import { gemmaConfigured, parseReceiptImageWithGemma } from "@/lib/gemma";
-import { locationOptions } from "@/lib/locations";
+import { LocationPicker } from "./LocationPicker";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -216,18 +216,7 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
               </div>
               <div className="sm:col-span-3">
                 <label className="label">Kept in (optional)</label>
-                <select
-                  className="input"
-                  value={locationId}
-                  onChange={(e) => setLocationId(e.target.value)}
-                >
-                  <option value="">—</option>
-                  {locationOptions(ref?.locations ?? []).map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <LocationPicker value={locationId} onChange={setLocationId} />
               </div>
             </div>
 

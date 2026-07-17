@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScanLine, Loader2, Receipt, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { useAddStock, useRefData } from "@/lib/queries";
+import { useAddStock, useRefData, useTrendsData } from "@/lib/queries";
 import { lookupBarcode, lookupBook } from "@/lib/barcode";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { ReceiptScanner } from "@/components/ReceiptScanner";
 import { AttributeFields } from "@/components/AttributeFields";
 import { ProductSearch } from "@/components/ProductSearch";
-import { locationOptions } from "@/lib/locations";
+import { LocationPicker } from "@/components/LocationPicker";
 import { useSpace, domainSpace } from "@/lib/space";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
@@ -48,6 +48,32 @@ export default function AddPage() {
   const currency = ref?.household.base_currency ?? "INR";
   const selectedDomain = ref?.domains.find((d) => d.id === domainId);
   const { space } = useSpace();
+  const { data: history = [] } = useTrendsData();
+
+  // The location you usually keep each type in, from your history — so picking
+  // "Electronics" pre-fills the cable drawer, "Grocery" the pantry.
+  const defaultLocByDomain = useMemo(() => {
+    const counts = new Map<string, Map<string, number>>();
+    for (const r of history) {
+      if (!r.domain_id || !r.location_id) continue;
+      let m = counts.get(r.domain_id);
+      if (!m) counts.set(r.domain_id, (m = new Map()));
+      m.set(r.location_id, (m.get(r.location_id) ?? 0) + 1);
+    }
+    const out = new Map<string, string>();
+    for (const [dom, m] of counts) {
+      let best = "";
+      let n = 0;
+      for (const [loc, c] of m) {
+        if (c > n) {
+          n = c;
+          best = loc;
+        }
+      }
+      if (best) out.set(dom, best);
+    }
+    return out;
+  }, [history]);
 
   // Default the type to match the space you're adding from: Kitchen → the
   // grocery domain, Home → the first home-space domain. Only while nothing
@@ -57,6 +83,17 @@ export default function AddPage() {
     const def = ref.domains.find((d) => domainSpace(d) === space);
     if (def) setDomainId(def.id);
   }, [domainId, ref?.domains, space]);
+
+  // Pre-fill the usual location for the chosen type — once per type, so it
+  // never fights you clearing or changing the spot.
+  const appliedLocRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!domainId || appliedLocRef.current.has(domainId)) return;
+    const def = defaultLocByDomain.get(domainId);
+    if (!def) return;
+    appliedLocRef.current.add(domainId);
+    setLocationId(def);
+  }, [domainId, defaultLocByDomain]);
   const showExpiry = selectedDomain?.has_expiry ?? true;
   const categories = useMemo(
     () =>
@@ -398,18 +435,7 @@ export default function AddPage() {
           </div>
           <div>
             <label className="label">Kept in</label>
-            <select
-              className="input"
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-            >
-              <option value="">—</option>
-              {locationOptions(ref?.locations ?? []).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <LocationPicker value={locationId} onChange={setLocationId} />
           </div>
         </div>
 

@@ -9,10 +9,9 @@ import {
   useToggleHomeTask,
   useDeleteHomeTask,
   useClearDoneTasks,
-  useRefData,
   useLocationPaths,
 } from "@/lib/queries";
-import { locationOptions } from "@/lib/locations";
+import { LocationPicker } from "@/components/LocationPicker";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/Skeleton";
 import { cn } from "@/lib/utils";
@@ -29,7 +28,6 @@ const PRIORITY_STYLE: Record<TaskPriority, string> = {
 // house. Ownerless by design — anyone adds, anyone checks off.
 export default function FixitPage() {
   const { data: tasks = [], isLoading } = useHomeTasks();
-  const { data: ref } = useRefData();
   const locPaths = useLocationPaths();
   const add = useAddHomeTask();
   const toggle = useToggleHomeTask();
@@ -108,19 +106,7 @@ export default function FixitPage() {
             <option value="normal">Normal priority</option>
             <option value="high">High priority</option>
           </select>
-          <select
-            className="input"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            aria-label="Where"
-          >
-            <option value="">Where? (optional)</option>
-            {locationOptions(ref?.locations ?? []).map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <LocationPicker value={locationId} onChange={setLocationId} placeholder="Where? (optional)" />
           <input
             className="input col-span-2 sm:col-span-1"
             value={notes}

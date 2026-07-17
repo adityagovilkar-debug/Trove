@@ -644,6 +644,68 @@ export function useDeleteStock() {
   });
 }
 
+// Create a location and return the new row — the location picker needs the id
+// so it can select the just-created spot without leaving the form.
+export function useCreateLocation() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async ({ name, parentId }: { name: string; parentId: string | null }) => {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb
+        .from("locations")
+        .insert({ household_id: householdId, name, parent_id: parentId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data as Location;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["ref-data"] }),
+  });
+}
+
+// Rename or re-parent a location.
+export function useUpdateLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      parentId,
+    }: {
+      id: string;
+      name?: string;
+      parentId?: string | null;
+    }) => {
+      const sb = supabaseBrowser();
+      const patch: Record<string, unknown> = {};
+      if (name !== undefined) patch.name = name;
+      if (parentId !== undefined) patch.parent_id = parentId;
+      const { error } = await sb.from("locations").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["ref-data"] }),
+  });
+}
+
+// Delete a location. The FK is ON DELETE SET NULL for both parent_id and
+// inventory.location_id, so children promote to the top level and items become
+// unfiled automatically — nothing is lost.
+export function useDeleteLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("locations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ref-data"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}
+
 // Generic helper to add a reference row (location/store/category).
 export function useAddRef(
   table: "locations" | "stores" | "categories",

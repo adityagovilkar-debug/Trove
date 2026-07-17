@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAddStock, useRefData } from "@/lib/queries";
 import type { ProductGroup } from "@/lib/products";
 import type { InventoryDetail, ShoppingItem } from "@/lib/types";
-import { locationOptions } from "@/lib/locations";
+import { LocationPicker } from "./LocationPicker";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
 const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
@@ -213,14 +213,7 @@ export function RepurchaseDialog({
             </div>
             <div>
               <label className="label">Kept in</label>
-              <select className="input" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-                <option value="">—</option>
-                {locationOptions(ref?.locations ?? []).map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <LocationPicker value={locationId} onChange={setLocationId} />
             </div>
           </div>
 
