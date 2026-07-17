@@ -19,6 +19,8 @@ import {
   CornerDownLeft,
   Home,
   CookingPot,
+  Hammer,
+  Lightbulb,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useStockSearch } from "@/lib/queries";
@@ -128,6 +130,8 @@ export function CommandPalette() {
       { id: "up", label: "Upcoming", icon: CalendarClock, run: () => go("/upcoming") },
       { id: "inv", label: "Pantry", icon: Boxes, run: () => go("/inventory") },
       { id: "things", label: "Things", icon: Boxes, run: () => go("/things") },
+      { id: "fixit", label: "Fix-it", icon: Hammer, run: () => go("/fixit") },
+      { id: "plans", label: "Plans", icon: Lightbulb, run: () => go("/plans") },
       { id: "recipes", label: "Recipes", icon: ChefHat, run: () => go("/recipes") },
       { id: "shop", label: "Shopping list", icon: ShoppingCart, run: () => go("/shopping") },
       { id: "add", label: "Add stock", icon: PlusCircle, run: () => go("/add") },

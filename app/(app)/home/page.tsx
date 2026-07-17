@@ -4,14 +4,14 @@ import { useMemo } from "react";
 import Link from "next/link";
 import {
   Boxes,
-  Clock,
   CreditCard,
   MapPin,
   ShieldCheck,
   Check,
-  ArrowRight,
   Plus,
   Search,
+  Hammer,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -20,12 +20,22 @@ import {
   useMarkSubscriptionPaid,
   useRefData,
   useLocationPaths,
+  useHomeTasks,
+  useToggleHomeTask,
+  usePlans,
 } from "@/lib/queries";
 import { buildUpcoming } from "@/lib/upcoming";
 import { groupIntoProducts } from "@/lib/products";
-import { monthlyCost } from "@/lib/subscriptions";
 import { rowSpace, domainSpace } from "@/lib/space";
 import { cn, formatMoney, formatDate } from "@/lib/utils";
+import type { PlanStatus } from "@/lib/types";
+
+const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
+  idea: "idea",
+  planned: "planned",
+  in_progress: "in progress",
+  done: "done",
+};
 
 function dueLabel(d: number) {
   if (d < 0) return `${Math.abs(d)}d ago`;
@@ -46,7 +56,10 @@ export default function HomeDashboardPage() {
   const { data: allActive = [], isLoading } = useInventory({ status: "active" });
   const { data: subs = [] } = useSubscriptions();
   const { data: ref } = useRefData();
+  const { data: tasks = [] } = useHomeTasks();
+  const { data: plans = [] } = usePlans();
   const markPaid = useMarkSubscriptionPaid();
+  const toggleTask = useToggleHomeTask();
   const locPaths = useLocationPaths();
 
   const things = useMemo(
@@ -54,8 +67,8 @@ export default function HomeDashboardPage() {
     [allActive],
   );
   const groups = useMemo(() => groupIntoProducts(things), [things]);
-  const activeSubs = subs.filter((s) => s.status === "active");
-  const subsMonthly = activeSubs.reduce((s, x) => s + monthlyCost(x), 0);
+  const openTasks = useMemo(() => tasks.filter((t) => !t.is_done), [tasks]);
+  const activePlans = useMemo(() => plans.filter((p) => p.status !== "done"), [plans]);
   const currency = ref?.household.base_currency ?? "INR";
 
   // Warranties + payments — the Home space's timeline.
@@ -107,13 +120,18 @@ export default function HomeDashboardPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={Boxes} label="Things tracked" value={groups.length} />
         <Stat
+          icon={Hammer}
+          label="Open fix-its"
+          value={openTasks.length}
+          tone={openTasks.length ? "amber" : undefined}
+        />
+        <Stat
           icon={ShieldCheck}
           label="Warranties ≤ 30d"
           value={warrantiesSoon}
           tone={warrantiesSoon ? "amber" : undefined}
         />
-        <Stat icon={CreditCard} label="Subscriptions / mo" value={formatMoney(subsMonthly, currency)} />
-        <Stat icon={MapPin} label="Places" value={(ref?.locations ?? []).length} />
+        <Stat icon={Lightbulb} label="Active plans" value={activePlans.length} />
       </div>
 
       {/* By type */}
@@ -133,6 +151,47 @@ export default function HomeDashboardPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Fix-it preview */}
+        <section className="card p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-semibold">Fix-it</h2>
+            <Link href="/fixit" className="text-xs text-text-muted hover:text-text">
+              All tasks →
+            </Link>
+          </div>
+          {openTasks.length === 0 ? (
+            <Empty text="Nothing to fix — the house is behaving. 🔧" />
+          ) : (
+            <div className="divide-y">
+              {openTasks.slice(0, 5).map((t) => (
+                <div key={t.id} className="flex items-center gap-3 py-2.5">
+                  <button
+                    onClick={() => toggleTask.mutate({ id: t.id, is_done: true })}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border hover:border-brand-500"
+                    aria-label="Mark done"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{t.title}</p>
+                    {(t.location_id || t.priority === "high") && (
+                      <p className="flex items-center gap-2 truncate text-xs text-text-muted">
+                        {t.priority === "high" && (
+                          <span className="font-medium text-rose-500">high priority</span>
+                        )}
+                        {t.location_id && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {locPaths.get(t.location_id) ?? ""}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Warranties + payments */}
         <section className="card p-4">
           <div className="mb-2 flex items-center justify-between">
@@ -224,11 +283,41 @@ export default function HomeDashboardPage() {
         </section>
       </div>
 
+      {/* Plans preview */}
+      {activePlans.length > 0 && (
+        <section className="card p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-semibold">
+              <Lightbulb className="h-4 w-4 text-brand-500" />
+              Plans
+            </h2>
+            <Link href="/plans" className="text-xs text-text-muted hover:text-text">
+              All plans →
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {activePlans.slice(0, 6).map((p) => (
+              <Link
+                key={p.id}
+                href="/plans"
+                className="chip bg-surface-2 text-text ring-border ring-inset transition-colors hover:bg-surface"
+              >
+                {p.title}
+                <span className="text-text-muted">· {PLAN_STATUS_LABEL[p.status]}</span>
+                {p.budget != null && (
+                  <span className="font-medium">· {formatMoney(p.budget, currency)}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <QuickAction href="/things" icon={Boxes} label="Browse things" />
+        <QuickAction href="/fixit" icon={Hammer} label="Fix-it" />
+        <QuickAction href="/plans" icon={Lightbulb} label="Plans" />
         <QuickAction href="/subscriptions" icon={CreditCard} label="Subscriptions" />
-        <QuickAction href="/upcoming" icon={Clock} label="Timeline" />
         <button
           onClick={() => window.dispatchEvent(new Event("trove:command"))}
           className="card flex items-center justify-center gap-2 p-3 text-sm font-medium hover:bg-surface-2"

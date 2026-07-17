@@ -170,6 +170,37 @@ export interface RecipeWithIngredients extends Recipe {
   ingredients: RecipeIngredient[];
 }
 
+export type TaskPriority = "low" | "normal" | "high";
+
+// A fix-it: the household's shared fridge-note ("fix the balcony door hinge").
+export interface HomeTask {
+  id: string;
+  household_id: string;
+  title: string;
+  notes: string | null;
+  location_id: string | null;
+  priority: TaskPriority;
+  is_done: boolean;
+  done_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PlanStatus = "idea" | "planned" | "in_progress" | "done";
+
+// A plan: a renovation / major-purchase idea moving through status lanes.
+export interface Plan {
+  id: string;
+  household_id: string;
+  title: string;
+  notes: string | null;
+  category: string | null;
+  status: PlanStatus;
+  budget: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MealPlan {
   id: string;
   household_id: string;

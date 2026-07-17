@@ -14,6 +14,8 @@ import {
   Command,
   ShoppingCart,
   ChefHat,
+  Hammer,
+  Lightbulb,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -42,9 +44,11 @@ const KITCHEN_NAV = [
 const HOME_NAV = [
   { href: "/home", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
   { href: "/things", label: "Things", short: "Things", icon: Boxes, mobile: true },
+  { href: "/fixit", label: "Fix-it", short: "Fix-it", icon: Hammer, mobile: true },
+  { href: "/plans", label: "Plans", short: "Plans", icon: Lightbulb, mobile: true },
   { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: true },
-  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: true },
-  { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: true },
+  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: false },
+  { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },
 ];
 
 export function AppShell(props: {

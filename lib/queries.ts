@@ -23,6 +23,10 @@ import type {
   RecipeIngredient,
   RecipeWithIngredients,
   MealPlanWithRecipe,
+  HomeTask,
+  TaskPriority,
+  Plan,
+  PlanStatus,
 } from "@/lib/types";
 import { advancePayment } from "@/lib/subscriptions";
 import { buildPathMap } from "@/lib/locations";
@@ -1094,5 +1098,205 @@ export function useDeleteMealPlan() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["meal-plans"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Fix-it tasks (Home space) — the household's shared fridge-note.
+// ---------------------------------------------------------------------------
+export function useHomeTasks() {
+  const { data: householdId } = useHouseholdId();
+  return useQuery({
+    queryKey: ["home-tasks", householdId],
+    enabled: !!householdId,
+    queryFn: async (): Promise<HomeTask[]> => {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb
+        .from("home_tasks")
+        .select("*")
+        .eq("household_id", householdId!)
+        .order("is_done")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as HomeTask[];
+    },
+  });
+}
+
+export interface HomeTaskInput {
+  title: string;
+  notes?: string | null;
+  locationId?: string | null;
+  priority?: TaskPriority;
+}
+
+export function useAddHomeTask() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async (input: HomeTaskInput) => {
+      const sb = supabaseBrowser();
+      const { data: auth } = await sb.auth.getUser();
+      const { error } = await sb.from("home_tasks").insert({
+        household_id: householdId,
+        title: input.title,
+        notes: input.notes ?? null,
+        location_id: input.locationId ?? null,
+        priority: input.priority ?? "normal",
+        created_by: auth.user?.id ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-tasks"] }),
+  });
+}
+
+export function useToggleHomeTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_done }: { id: string; is_done: boolean }) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb
+        .from("home_tasks")
+        .update({ is_done, done_at: is_done ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, is_done }) => {
+      await qc.cancelQueries({ queryKey: ["home-tasks"] });
+      const snap = qc.getQueriesData({ queryKey: ["home-tasks"] }) as Snapshot;
+      qc.setQueriesData<HomeTask[]>({ queryKey: ["home-tasks"] }, (old) =>
+        old?.map((t) =>
+          t.id === id
+            ? { ...t, is_done, done_at: is_done ? new Date().toISOString() : null }
+            : t,
+        ),
+      );
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["home-tasks"] }),
+  });
+}
+
+export function useDeleteHomeTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("home_tasks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-tasks"] }),
+  });
+}
+
+export function useClearDoneTasks() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async () => {
+      const sb = supabaseBrowser();
+      const { error } = await sb
+        .from("home_tasks")
+        .delete()
+        .eq("household_id", householdId!)
+        .eq("is_done", true);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-tasks"] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Plans (Home space) — the renovation / major-purchase ideas board.
+// ---------------------------------------------------------------------------
+export function usePlans() {
+  const { data: householdId } = useHouseholdId();
+  return useQuery({
+    queryKey: ["plans", householdId],
+    enabled: !!householdId,
+    queryFn: async (): Promise<Plan[]> => {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb
+        .from("plans")
+        .select("*")
+        .eq("household_id", householdId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Plan[];
+    },
+  });
+}
+
+export interface PlanInput {
+  id?: string;
+  title: string;
+  notes?: string | null;
+  category?: string | null;
+  status?: PlanStatus;
+  budget?: number | null;
+}
+
+export function useUpsertPlan() {
+  const qc = useQueryClient();
+  const { data: householdId } = useHouseholdId();
+  return useMutation({
+    mutationFn: async (input: PlanInput) => {
+      const sb = supabaseBrowser();
+      const fields = {
+        title: input.title,
+        notes: input.notes ?? null,
+        category: input.category ?? null,
+        status: input.status ?? "idea",
+        budget: input.budget ?? null,
+      };
+      if (input.id) {
+        const { error } = await sb.from("plans").update(fields).eq("id", input.id);
+        if (error) throw error;
+      } else {
+        const { data: auth } = await sb.auth.getUser();
+        const { error } = await sb.from("plans").insert({
+          household_id: householdId,
+          created_by: auth.user?.id ?? null,
+          ...fields,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["plans"] }),
+  });
+}
+
+export function useSetPlanStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: PlanStatus }) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("plans").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ["plans"] });
+      const snap = qc.getQueriesData({ queryKey: ["plans"] }) as Snapshot;
+      qc.setQueriesData<Plan[]>({ queryKey: ["plans"] }, (old) =>
+        old?.map((p) => (p.id === id ? { ...p, status } : p)),
+      );
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["plans"] }),
+  });
+}
+
+export function useDeletePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sb = supabaseBrowser();
+      const { error } = await sb.from("plans").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["plans"] }),
   });
 }
