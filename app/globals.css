@@ -3,109 +3,78 @@
 /* Dark mode driven by a class on <html> (toggled in Settings / system). */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* =====================================================================
+   Trove — "Instrument" (Bench) look. Paper (light) + Backlit (dark).
+   Scientific-plotter aesthetic: warm-neutral paper, hairline rules,
+   corner-registration tics, mono tabular figures, ink as the accent.
+   The old semantic names (bg / surface / text-muted / brand-*) are kept
+   and re-pointed at the Instrument tokens so every screen inherits it.
+   ===================================================================== */
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-serif: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-geist-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
 
-  /* Brand — Warm Pantry default (terracotta on cream). Dark mode and the
-     Neo-brutalist aesthetic override this ramp further down. */
-  --color-brand-50: #fbeee6;
-  --color-brand-100: #f6d8c5;
-  --color-brand-200: #efb295;
-  --color-brand-300: #e68a63;
-  --color-brand-400: #dd6536;
-  --color-brand-500: #cf4e1c;
-  --color-brand-600: #c2410c;
-  --color-brand-700: #9a3412;
-  --color-brand-800: #7c2d12;
-  --color-brand-900: #63230f;
+  /* Nearly-square geometry — no pills except true circles (rounded-full). */
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 5px;
+  --radius-3xl: 6px;
 }
 
-/* ====================================================================
-   Aesthetic 1 · Warm Pantry (light)  —  the default
-   ==================================================================== */
 :root {
   color-scheme: light;
-  --bg: #fbf6ee;
-  --surface: #ffffff;
-  --surface-2: #f3eada;
-  --border: #e8dcc8;
-  --text: #2e241b;
-  --text-muted: #8a7a66;
-  --ring: #c2410c;
-  --shadow: 0 1px 2px rgba(60, 40, 20, 0.05), 0 8px 22px -12px rgba(60, 40, 20, 0.14);
+  --paper: #ffffff;
+  --paper-2: #faf9f6;
+  --grid-dot: #deddd6;
+  --rule: #e7e6df;
+  --rule-strong: #d6d5cc;
+  --ink: #12141a;
+  --ink-2: #5a5e68;
+  --ink-3: #9a9ea8;
+  --ink-4: #c3c5cb;
+  --pen-1: #d93a1e;
+  --pen-2: #1b4fa0;
+  --pen-3: #0e7c63;
+  --pen-4: #b07500;
+  --pen-5: #6b3fa0;
+  --pen-6: #c2410c;
+  --good: #0e7c63;
+  --watch: #b07500;
+  --bad: #c8321a;
+  --r: 3px;
+
+  /* legacy names, re-pointed */
+  --bg: var(--paper);
+  --surface: var(--paper);
+  --surface-2: var(--paper-2);
+  --border: var(--rule);
+  --text: var(--ink);
+  --text-muted: var(--ink-3);
+  --ring: var(--ink-2);
 }
 
-/* Aesthetic 1 · Midnight Larder (dark) — cool charcoal + honey amber */
 .dark {
   color-scheme: dark;
-  --bg: #17171c;
-  --surface: #1f1f25;
-  --surface-2: #262630;
-  --border: #2f2f3a;
-  --text: #ececf0;
-  --text-muted: #9a9aa6;
-  --ring: #f2a93b;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 26px -12px rgba(0, 0, 0, 0.6);
-  --color-brand-50: #241a0b;
-  --color-brand-100: #3a2a12;
-  --color-brand-200: #574019;
-  --color-brand-300: #8a6526;
-  --color-brand-400: #c5912f;
-  --color-brand-500: #f2a93b;
-  --color-brand-600: #b5670f;
-  --color-brand-700: #8a4e0a;
-  --color-brand-800: #6e3f08;
-  --color-brand-900: #522f06;
-}
-
-/* ====================================================================
-   Aesthetic 2 · Neo Brutalist (light + dark)
-   Hard edges (radius 0), bold near-mono borders, offset block shadows,
-   electric-lime accent. Selected from Settings (data-theme on <html>).
-   ==================================================================== */
-html[data-theme="brutalist"] {
-  --bg: #fbfbf7;
-  --surface: #ffffff;
-  --surface-2: #f2f2ec;
-  --border: #141414;
-  --text: #111111;
-  --text-muted: #555555;
-  --ring: #111111;
-  --shadow: 3px 3px 0 #111111;
-  /* Lime accent ramp */
-  --color-brand-50: #f4ffcc;
-  --color-brand-100: #e8ff99;
-  --color-brand-200: #d6fa5e;
-  --color-brand-300: #c6f500;
-  --color-brand-400: #bce800;
-  --color-brand-500: #b6e400;
-  --color-brand-600: #a8d400;
-  --color-brand-700: #8fb300;
-  --color-brand-800: #6e8a00;
-  --color-brand-900: #4f6300;
-  /* Collapse the radius scale so every rounded-* utility goes square. */
-  --radius-xs: 0;
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-2xl: 0;
-  --radius-3xl: 0;
-  --radius-4xl: 0;
-}
-
-html[data-theme="brutalist"].dark {
-  color-scheme: dark;
-  --bg: #141414;
-  --surface: #1e1e1e;
-  --surface-2: #262626;
-  --border: #ededed;
-  --text: #f5f5f5;
-  --text-muted: #a3a3a3;
-  --ring: #ffffff;
-  --shadow: 3px 3px 0 #000000;
+  --paper: #0e0f12;
+  --paper-2: #15161b;
+  --grid-dot: #24262d;
+  --rule: #1f2127;
+  --rule-strong: #30333b;
+  --ink: #e8e9ec;
+  --ink-2: #b3b7c0;
+  --ink-3: #8e929c;
+  --ink-4: #3a3d45;
+  --pen-1: #ff5a3c;
+  --pen-2: #5b8def;
+  --pen-3: #2bc29b;
+  --pen-4: #e0a526;
+  --pen-5: #a57be8;
+  --pen-6: #f07a3a;
+  --good: #2bc29b;
+  --watch: #e0a526;
+  --bad: #ff6b4f;
 }
 
 @theme inline {
@@ -115,115 +84,185 @@ html[data-theme="brutalist"].dark {
   --color-border: var(--border);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
+
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-good: var(--good);
+  --color-watch: var(--watch);
+  --color-bad: var(--bad);
+  --color-pen-1: var(--pen-1);
+  --color-pen-2: var(--pen-2);
+  --color-pen-3: var(--pen-3);
+  --color-pen-4: var(--pen-4);
+  --color-pen-5: var(--pen-5);
+  --color-pen-6: var(--pen-6);
+
+  /* "brand" was a warm accent ramp; in Instrument the accent is the ink.
+     Keeping the ramp names means every existing bg-brand-* / text-brand-*
+     recolours to the monochrome scheme automatically. */
+  --color-brand-50: var(--paper-2);
+  --color-brand-100: var(--paper-2);
+  --color-brand-200: var(--rule-strong);
+  --color-brand-300: var(--ink-3);
+  --color-brand-400: var(--ink-2);
+  --color-brand-500: var(--ink);
+  --color-brand-600: var(--ink);
+  --color-brand-700: var(--ink);
+  --color-brand-800: var(--ink);
+  --color-brand-900: var(--ink);
 }
 
 * {
-  border-color: var(--border);
+  border-color: var(--rule);
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
+  background-color: var(--paper);
+  /* Faint engineering dot-grid on the page — the drafting-paper layer.
+     Opaque surfaces (cards) sit on top, so it only shows in the gutters. */
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0);
+  background-size: 22px 22px;
+  background-attachment: fixed;
+  color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Warm Pantry leans editorial: serif page titles + wordmark. Brutalist keeps
-   everything geometric sans (overridden below). */
-h1,
-h2,
-.wordmark {
-  font-family: var(--font-serif);
+::selection {
+  background: var(--ink);
+  color: var(--paper);
 }
 
-::selection {
-  background: var(--color-brand-200);
-  color: var(--color-brand-900);
+:focus-visible {
+  outline: 1.5px solid var(--ink-2);
+  outline-offset: 2px;
+}
+
+/* Instrument type helpers */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.wordmark {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+.cap {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-3);
 }
 
 /* Reusable component classes */
 @layer components {
+  /* Units: hairline panels with corner-registration tics. No shadows. */
   .card {
-    @apply rounded-2xl border bg-surface;
-    border-color: var(--border);
-    box-shadow: var(--shadow);
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
   }
+  .card::before,
+  .card::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: solid var(--rule-strong);
+    pointer-events: none;
+  }
+  .card::before {
+    top: -1px;
+    left: -1px;
+    border-width: 1px 0 0 1px;
+  }
+  .card::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 1px 1px 0;
+  }
+
   .btn,
   .btn-primary,
   .btn-ghost,
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2
-           text-sm font-medium transition-all duration-150 active:scale-[0.98]
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45
-           disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold
+           uppercase tracking-[0.08em] transition-all duration-150 active:scale-[0.98]
+           focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40
+           disabled:active:scale-100;
+    border-radius: var(--r);
   }
   .btn-primary {
-    @apply bg-brand-600 text-white hover:bg-brand-700;
-    box-shadow: 0 1px 2px rgba(120, 54, 18, 0.25);
+    background: var(--ink);
+    color: var(--paper);
+    border: 1px solid var(--ink);
+  }
+  .btn-primary:hover:not(:disabled) {
+    opacity: 0.86;
   }
   .btn-ghost {
-    @apply text-text hover:bg-surface-2;
+    color: var(--ink);
+    border: 1px solid transparent;
+  }
+  .btn-ghost:hover {
+    background: var(--surface-2);
   }
   .btn-outline {
-    @apply border bg-surface hover:border-brand-500/40 hover:bg-surface-2;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--rule-strong);
+  }
+  .btn-outline:hover {
+    border-color: var(--ink-2);
   }
   .input {
-    @apply w-full rounded-xl border bg-surface px-3 py-2 text-sm text-text
-           outline-none transition placeholder:text-text-muted/60
-           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/35;
+    @apply w-full border bg-surface px-3 py-2 text-sm text-text outline-none transition
+           placeholder:text-ink-3/80;
+    border-color: var(--rule);
+    border-radius: var(--r);
+  }
+  .input:focus {
+    border-color: var(--ink-2);
   }
   .label {
-    @apply mb-1 block text-xs font-medium text-text-muted;
+    @apply mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-3;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs
-           font-medium ring-1 ring-inset;
+    @apply inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium ring-1 ring-inset;
+    border-radius: var(--r);
   }
 }
 
-/* ----- Neo-brutalist component overrides (unlayered → win over utilities) --- */
-html[data-theme="brutalist"] h1,
-html[data-theme="brutalist"] h2,
-html[data-theme="brutalist"] .wordmark {
-  font-family: var(--font-sans);
-}
-html[data-theme="brutalist"] .rounded-full,
-html[data-theme="brutalist"] .chip {
-  border-radius: 0;
-}
-html[data-theme="brutalist"] .card,
-html[data-theme="brutalist"] .btn-outline,
-html[data-theme="brutalist"] .input {
-  border-width: 2px;
-}
-html[data-theme="brutalist"] .btn-primary {
-  color: #111111;
-  border: 2px solid var(--border);
-  box-shadow: 2px 2px 0 var(--border);
-}
-/* Accent text/icons go ink (lime is a fill colour, never a text colour). */
-html[data-theme="brutalist"] .text-brand-500,
-html[data-theme="brutalist"] .text-brand-600,
-html[data-theme="brutalist"] .text-brand-700 {
-  color: var(--text);
-}
-/* White text sitting on a lime brand fill (active nav, chips) goes ink. */
-html[data-theme="brutalist"] .bg-brand-600.text-white {
-  color: #111111;
+/* Paper text on an ink fill (active nav, chips, check circles). brand-600
+   maps to ink, so white sitting on it must flip to paper in both modes. */
+.bg-brand-600.text-white,
+.bg-brand-700.text-white {
+  color: var(--paper);
 }
 
 /* Thin, unobtrusive scrollbars */
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 9999px;
+  background: var(--rule-strong);
+  border: 3px solid var(--paper);
+  border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--ink-3);
 }
 ::-webkit-scrollbar-track {
   background: transparent;

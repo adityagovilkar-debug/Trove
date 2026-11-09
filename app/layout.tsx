@@ -1,12 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-// Warm Pantry's editorial serif (used for headings + the wordmark).
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Trove — Home Inventory",
@@ -20,8 +18,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf6ee" },
-    { media: "(prefers-color-scheme: dark)", color: "#17171c" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0f12" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -35,13 +33,13 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <head>
-        {/* Apply saved theme (light/dark) + aesthetic before paint, no flash. */}
+        {/* Apply the saved light/dark (paper/backlit) mode before paint. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('trove-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');var a=localStorage.getItem('trove-aesthetic');if(a==='brutalist')document.documentElement.setAttribute('data-theme','brutalist');}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('trove-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
           }}
         />
       </head>

@@ -218,8 +218,8 @@ function Stat({
       <div className="mb-3 inline-flex rounded-lg bg-brand-100 p-2 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
         <Icon className="h-5 w-5" />
       </div>
-      <p className="truncate text-xl font-semibold tracking-tight">{value}</p>
-      <p className="truncate text-xs text-text-muted">{sub ? `${label} · ${sub}` : label}</p>
+      <p className="mono truncate text-xl font-semibold">{value}</p>
+      <p className="cap mt-1 truncate normal-case tracking-[0.1em]">{sub ? `${label} · ${sub}` : label}</p>
     </div>
   );
 }

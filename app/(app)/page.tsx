@@ -348,8 +348,8 @@ function Stat({
       >
         <Icon className="h-5 w-5" />
       </div>
-      <p className="text-2xl font-semibold tracking-tight">{value}</p>
-      <p className="text-xs text-text-muted">{label}</p>
+      <p className="mono text-2xl font-semibold">{value}</p>
+      <p className="cap mt-1">{label}</p>
     </div>
   );
 }

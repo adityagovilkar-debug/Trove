@@ -1,5 +1,5 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trove">
-  <rect width="512" height="512" fill="#c2410c"/>
+  <rect width="512" height="512" fill="#12141a"/>
   <g transform="translate(88,88) scale(7)" fill="#ffffff">
     <!-- gem: the 'trove' -->
     <path d="M24 8 L31 15 L24 22 L17 15 Z"/>

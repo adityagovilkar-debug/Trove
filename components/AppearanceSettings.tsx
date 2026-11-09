@@ -1,52 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Sun, Moon } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Aesthetic = "warm" | "brutalist";
 type Mode = "light" | "dark";
 
-const AESTHETICS: {
-  id: Aesthetic;
-  name: string;
-  desc: string;
-  swatches: [string, string, string];
-}[] = [
-  {
-    id: "warm",
-    name: "Warm Pantry",
-    desc: "Cozy cream & terracotta · midnight in the dark",
-    swatches: ["#fbf6ee", "#c2410c", "#17171c"],
-  },
-  {
-    id: "brutalist",
-    name: "Neo Brutalist",
-    desc: "Hard edges, bold borders, electric lime",
-    swatches: ["#ffffff", "#b6e400", "#141414"],
-  },
+const MODES: { id: Mode; label: string; sub: string; icon: typeof Sun }[] = [
+  { id: "light", label: "Paper", sub: "Light", icon: Sun },
+  { id: "dark", label: "Backlit", sub: "Dark", icon: Moon },
 ];
 
-// Reads/writes the same flags the pre-paint script in layout.tsx applies:
-// `.dark` class + localStorage `trove-theme`, and `data-theme="brutalist"` +
-// localStorage `trove-aesthetic`.
+// Reads/writes the light/dark flag the pre-paint script in layout.tsx applies:
+// the `.dark` class + localStorage `trove-theme`. Trove uses the single
+// Instrument aesthetic in two lightings — Paper and Backlit.
 export function AppearanceSettings() {
-  const [aesthetic, setAesthetic] = useState<Aesthetic>("warm");
   const [mode, setMode] = useState<Mode>("light");
 
   useEffect(() => {
-    const el = document.documentElement;
-    setMode(el.classList.contains("dark") ? "dark" : "light");
-    setAesthetic(el.getAttribute("data-theme") === "brutalist" ? "brutalist" : "warm");
+    setMode(document.documentElement.classList.contains("dark") ? "dark" : "light");
   }, []);
-
-  function applyAesthetic(a: Aesthetic) {
-    setAesthetic(a);
-    const el = document.documentElement;
-    if (a === "brutalist") el.setAttribute("data-theme", "brutalist");
-    else el.removeAttribute("data-theme");
-    localStorage.setItem("trove-aesthetic", a);
-  }
 
   function applyMode(m: Mode) {
     setMode(m);
@@ -55,59 +28,37 @@ export function AppearanceSettings() {
   }
 
   return (
-    <section className="card space-y-4 p-5">
+    <section className="card space-y-3 p-5">
       <h2 className="font-semibold">Appearance</h2>
-
-      <div>
-        <p className="label">Theme</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {AESTHETICS.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => applyAesthetic(a.id)}
+      <div className="grid grid-cols-2 gap-3">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => applyMode(m.id)}
+            className={cn(
+              "flex items-center gap-3 border p-3 text-left transition-colors",
+              mode === m.id ? "border-ink" : "border-rule hover:bg-surface-2",
+            )}
+            style={{ borderRadius: "var(--r)" }}
+          >
+            <span
               className={cn(
-                "flex items-center gap-3 rounded-xl border p-3 text-left transition-colors",
-                aesthetic === a.id
-                  ? "border-brand-500 ring-2 ring-brand-500/40"
-                  : "hover:bg-surface-2",
+                "flex h-9 w-9 shrink-0 items-center justify-center border",
+                mode === m.id ? "bg-ink text-paper" : "text-ink-3",
               )}
+              style={{ borderRadius: "var(--r)" }}
             >
-              <div className="flex shrink-0 overflow-hidden rounded-lg border">
-                {a.swatches.map((c, i) => (
-                  <span key={i} style={{ background: c }} className="h-9 w-4" />
-                ))}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{a.name}</p>
-                <p className="text-xs text-text-muted">{a.desc}</p>
-              </div>
-              {aesthetic === a.id && (
-                <Check className="ml-auto h-4 w-4 shrink-0 text-brand-600" />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="label">Mode</p>
-        <div className="inline-flex rounded-xl bg-surface-2 p-1">
-          {(["light", "dark"] as Mode[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => applyMode(m)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors",
-                mode === m ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
-              )}
-            >
-              {m === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              {m}
-            </button>
-          ))}
-        </div>
+              <m.icon className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{m.label}</span>
+              <span className="block text-[11px] uppercase tracking-[0.12em] text-ink-3">
+                {m.sub}
+              </span>
+            </span>
+          </button>
+        ))}
       </div>
     </section>
   );

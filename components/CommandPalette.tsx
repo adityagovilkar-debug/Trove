@@ -306,7 +306,7 @@ export function CommandPalette() {
                 <Boxes className="h-4 w-4 shrink-0" />
                 <span className="flex-1 truncate text-left">
                   {s.item_name}
-                  <span className={cn("ml-2 text-xs", active ? "text-white/70" : "text-text-muted")}>
+                  <span className={cn("ml-2 text-xs", active ? "text-paper/70" : "text-text-muted")}>
                     {s.quantity}
                     {s.unit ? ` ${s.unit}` : ""}
                   </span>
@@ -314,7 +314,7 @@ export function CommandPalette() {
                 <span
                   className={cn(
                     "flex items-center gap-1 text-xs",
-                    active ? "text-white/70" : "text-text-muted",
+                    active ? "text-paper/70" : "text-text-muted",
                   )}
                 >
                   <MapPin className="h-3 w-3" />

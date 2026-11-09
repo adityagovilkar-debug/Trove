@@ -385,8 +385,8 @@ function Stat({
       <div className={`mb-3 inline-flex rounded-lg p-2 ${TONES[tone]}`}>
         <Icon className="h-5 w-5" />
       </div>
-      <p className="text-xl font-semibold tracking-tight">{value}</p>
-      <p className="text-xs text-text-muted">{label}</p>
+      <p className="mono text-xl font-semibold">{value}</p>
+      <p className="cap mt-1">{label}</p>
     </div>
   );
 }
