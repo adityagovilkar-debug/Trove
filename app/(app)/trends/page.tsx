@@ -163,7 +163,7 @@ export default function TrendsPage() {
           <span className="text-sm text-text-muted">
             This month {formatMoney(mom.thisM, currency)}
             {mom.pct != null && (
-              <span className={cn("ml-1 font-medium", mom.pct > 0 ? "text-rose-500" : "text-brand-600")}>
+              <span className={cn("mono ml-1 font-medium", mom.pct > 0 ? "text-bad" : "text-good")}>
                 {mom.pct > 0 ? "▲" : "▼"} {Math.abs(mom.pct)}% vs last
               </span>
             )}
@@ -259,8 +259,8 @@ export default function TrendsPage() {
                         flat
                           ? "bg-surface-2 text-text-muted ring-border"
                           : up
-                            ? "bg-rose-500/15 text-rose-600 ring-rose-500/30 dark:text-rose-400"
-                            : "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 dark:text-emerald-400",
+                            ? "bg-bad/12 text-bad ring-bad/30"
+                            : "bg-good/12 text-good ring-good/30",
                       )}
                     >
                       {!flat && (up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />)}
@@ -356,8 +356,8 @@ const tooltipStyle = {
 };
 
 const TONES: Record<string, string> = {
-  brand: "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300",
-  rose: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+  brand: "bg-surface-2 text-ink ring-1 ring-inset ring-border",
+  rose: "bg-bad/12 text-bad ring-1 ring-inset ring-bad/30",
   slate: "bg-surface-2 text-text-muted",
 };
 

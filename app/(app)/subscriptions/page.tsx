@@ -27,6 +27,7 @@ import { cn, formatMoney, formatDate } from "@/lib/utils";
 import type { Subscription } from "@/lib/types";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/Skeleton";
+import { ScreenHead } from "@/components/instrument";
 
 export default function SubscriptionsPage() {
   const { data: subs = [], isLoading } = useSubscriptions();
@@ -49,7 +50,7 @@ export default function SubscriptionsPage() {
     .sort((a, b) => (a.next_payment! < b.next_payment! ? -1 : 1))[0];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="pn2 mx-auto max-w-5xl space-y-6">
       {dialog.open && (
         <SubscriptionDialog
           sub={dialog.sub}
@@ -57,16 +58,17 @@ export default function SubscriptionsPage() {
         />
       )}
 
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Subscriptions</h1>
-          <p className="text-sm text-text-muted">Your recurring payments at a glance.</p>
-        </div>
-        <button className="btn-primary" onClick={() => setDialog({ open: true, sub: null })}>
-          <Plus className="h-[18px] w-[18px]" />
-          <span className="hidden sm:inline">Add</span>
-        </button>
-      </div>
+      <ScreenHead
+        plate="SUBSCRIPTIONS"
+        title="Subscriptions"
+        sub="Your recurring payments at a glance."
+        actions={
+          <button className="btn-primary" onClick={() => setDialog({ open: true, sub: null })}>
+            <Plus className="h-[18px] w-[18px]" />
+            <span className="hidden sm:inline">Add</span>
+          </button>
+        }
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -118,25 +120,25 @@ export default function SubscriptionsPage() {
                         <div className="text-xs text-text-muted">{s.category}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3">{formatMoney(s.price, s.currency)}</td>
+                    <td className="mono px-4 py-3">{formatMoney(s.price, s.currency)}</td>
                     <td className="px-4 py-3 text-text-muted">
                       {s.billing_cycle === "custom" ? `Every ${s.cycle_days}d` : cycleLabel}
                     </td>
-                    <td className="px-4 py-3 text-text-muted">
+                    <td className="mono px-4 py-3 text-text-muted">
                       {formatMoney(monthlyCost(s), s.currency)}
                     </td>
                     <td className="px-4 py-3">
                       {s.next_payment ? (
                         <div>
-                          <div>{formatDate(s.next_payment)}</div>
+                          <div className="mono">{formatDate(s.next_payment)}</div>
                           {s.status === "active" && d != null && (
                             <span
                               className={cn(
-                                "text-xs",
+                                "mono text-xs",
                                 d < 0
-                                  ? "text-rose-500"
+                                  ? "text-bad"
                                   : d <= 3
-                                    ? "text-orange-500"
+                                    ? "text-watch"
                                     : "text-text-muted",
                               )}
                             >
@@ -153,10 +155,13 @@ export default function SubscriptionsPage() {
                         className={cn(
                           "chip ring-inset",
                           s.status === "active"
-                            ? "bg-brand-100 text-brand-700 ring-brand-500/20 dark:bg-brand-900/30 dark:text-brand-300"
+                            ? "bg-surface-2 text-ink ring-border"
                             : "bg-surface-2 text-text-muted ring-border",
                         )}
                       >
+                        {s.status === "active" && (
+                          <span className="led mr-1" style={{ background: "var(--good)" }} />
+                        )}
                         {s.status}
                       </span>
                     </td>
@@ -183,7 +188,7 @@ export default function SubscriptionsPage() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          className="btn-ghost px-2 py-1.5 text-rose-500"
+                          className="btn-ghost px-2 py-1.5 text-bad"
                           title="Delete"
                           onClick={() => del.mutate(s.id)}
                         >
@@ -215,7 +220,7 @@ function Stat({
 }) {
   return (
     <div className="card p-4">
-      <div className="mb-3 inline-flex rounded-lg bg-brand-100 p-2 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+      <div className="mb-3 inline-flex rounded-[3px] bg-surface-2 p-2 text-ink-3 ring-1 ring-inset ring-border">
         <Icon className="h-5 w-5" />
       </div>
       <p className="mono truncate text-xl font-semibold">{value}</p>

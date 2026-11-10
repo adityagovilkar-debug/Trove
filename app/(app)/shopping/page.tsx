@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { useMemo, useState } from "react";
 import { Plus, Check, Trash2, ShoppingCart, Sparkles, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
@@ -55,12 +57,12 @@ export default function ShoppingPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Shopping list</h1>
-        <p className="text-sm text-text-muted">
-          What to buy next time you're out. Check things off as you shop.
-        </p>
-      </div>
+      <ScreenHead
+        plate="SHOPPING"
+        pen="pn6"
+        title="Shopping list"
+        sub="What to buy next time you're out. Check things off as you shop."
+      />
 
       <form onSubmit={submit} className="flex gap-2">
         <input
@@ -125,7 +127,7 @@ export default function ShoppingPage() {
                   </button>
                   <button
                     onClick={() => del.mutate(it.id)}
-                    className="btn-ghost px-2 py-1.5 text-text-muted hover:text-rose-500"
+                    className="btn-ghost px-2 py-1.5 text-text-muted hover:text-bad"
                     aria-label="Remove"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -143,7 +145,7 @@ export default function ShoppingPage() {
                 </p>
                 <button
                   onClick={() => clear.mutate()}
-                  className="text-xs text-text-muted hover:text-rose-500"
+                  className="text-xs text-text-muted hover:text-bad"
                 >
                   Clear
                 </button>
@@ -161,7 +163,7 @@ export default function ShoppingPage() {
                     <p className="flex-1 truncate text-sm line-through">{it.name}</p>
                     <button
                       onClick={() => del.mutate(it.id)}
-                      className="btn-ghost px-2 py-1.5 text-text-muted hover:text-rose-500"
+                      className="btn-ghost px-2 py-1.5 text-text-muted hover:text-bad"
                       aria-label="Remove"
                     >
                       <Trash2 className="h-4 w-4" />

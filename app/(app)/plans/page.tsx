@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { useMemo, useState } from "react";
 import {
   Plus,
@@ -66,18 +68,18 @@ export default function PlansPage() {
         <PlanDialog plan={dialog.plan} currency={currency} onClose={() => setDialog({ open: false })} />
       )}
 
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Plans</h1>
-          <p className="text-sm text-text-muted">
-            Renovations, big purchases, and someday-ideas for the house.
-          </p>
-        </div>
-        <button className="btn-primary" onClick={() => setDialog({ open: true, plan: null })}>
-          <Plus className="h-[18px] w-[18px]" />
-          <span className="hidden sm:inline">New plan</span>
-        </button>
-      </div>
+      <ScreenHead
+        plate="PLANS"
+        pen="pn2"
+        title="Plans"
+        sub="Renovations, big purchases, and someday-ideas for the house."
+        actions={
+          <button className="btn-primary" onClick={() => setDialog({ open: true, plan: null })}>
+            <Plus className="h-[18px] w-[18px]" />
+            <span className="hidden sm:inline">New plan</span>
+          </button>
+        }
+      />
 
       {isLoading ? (
         <Skeleton className="h-40 rounded-2xl" />
@@ -152,7 +154,7 @@ export default function PlansPage() {
                             </button>
                             <button
                               onClick={() => del.mutate(p.id)}
-                              className="btn-ghost px-2 py-1 text-text-muted hover:text-rose-500"
+                              className="btn-ghost px-2 py-1 text-text-muted hover:text-bad"
                               title="Delete"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

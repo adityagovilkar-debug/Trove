@@ -257,7 +257,7 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
                   />
                   <button
                     onClick={() => removeRow(r.key)}
-                    className="btn-ghost shrink-0 px-2 py-1.5 text-text-muted hover:text-rose-500"
+                    className="btn-ghost shrink-0 px-2 py-1.5 text-text-muted hover:text-bad"
                     aria-label="Remove"
                   >
                     <Trash2 className="h-4 w-4" />

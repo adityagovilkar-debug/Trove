@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, Trash2, Check, Users } from "lucide-react";
@@ -88,7 +90,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+      <ScreenHead plate="SETTINGS" pen="pn0" title="Settings" />
 
       {/* Appearance */}
       <AppearanceSettings />
@@ -235,7 +237,7 @@ function EditableList({
             {it.label}
             <button
               onClick={() => onDelete(it.id)}
-              className="text-text-muted hover:text-rose-500"
+              className="text-text-muted hover:text-bad"
               aria-label={`Delete ${it.label}`}
             >
               <Trash2 className="h-3 w-3" />

@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -48,18 +50,18 @@ function InventoryInner() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pantry</h1>
-          <p className="text-sm text-text-muted">
-            {expiringOnly ? "Showing food expiring within a week." : "All the food in the house."}
-          </p>
-        </div>
-        <Link href="/add" className="btn-primary">
-          <PlusCircle className="h-[18px] w-[18px]" />
-          <span className="hidden sm:inline">Add</span>
-        </Link>
-      </div>
+      <ScreenHead
+        plate="PANTRY"
+        pen="pn6"
+        title="Pantry"
+        sub={expiringOnly ? "Showing food expiring within a week." : "All the food in the house."}
+        actions={
+          <Link href="/add" className="btn-primary">
+            <PlusCircle className="h-[18px] w-[18px]" />
+            <span className="hidden sm:inline">Add</span>
+          </Link>
+        }
+      />
 
       {/* Status tabs */}
       <div className="flex flex-wrap gap-1 rounded-xl bg-surface-2 p-1">

@@ -371,7 +371,7 @@ function LotRow({
           </button>
           <button
             onClick={() => del.mutate(lot.id)}
-            className="rounded-lg p-1.5 text-rose-500 hover:bg-surface-2"
+            className="rounded-lg p-1.5 text-bad hover:bg-surface-2"
             title="Delete this purchase"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -410,7 +410,7 @@ function ProductCardMobile({
   return (
     <SwipeRow
       left={{ label: "Use 1", icon: <Minus className="h-4 w-4" />, bg: "bg-brand-600 text-white", onAction: onUseOne }}
-      right={{ label: "Buy again", icon: <Plus className="h-4 w-4" />, bg: "bg-sky-600 text-white", onAction: onBuyAgain }}
+      right={{ label: "Buy again", icon: <Plus className="h-4 w-4" />, bg: "bg-ink text-paper", onAction: onBuyAgain }}
     >
       <div className="card p-3">
         <button
@@ -511,7 +511,7 @@ function MobileLotRow({
       <button onClick={() => setStatus.mutate({ id: lot.id, status: "finished" })} className="rounded-lg p-1.5 hover:bg-surface-2" title="Finish">
         <Check className="h-3.5 w-3.5" />
       </button>
-      <button onClick={() => del.mutate(lot.id)} className="rounded-lg p-1.5 text-rose-500 hover:bg-surface-2" title="Delete">
+      <button onClick={() => del.mutate(lot.id)} className="rounded-lg p-1.5 text-bad hover:bg-surface-2" title="Delete">
         <Trash2 className="h-3.5 w-3.5" />
       </button>
     </div>

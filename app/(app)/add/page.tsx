@@ -12,6 +12,7 @@ import { AttributeFields } from "@/components/AttributeFields";
 import { ProductSearch } from "@/components/ProductSearch";
 import { LocationPicker } from "@/components/LocationPicker";
 import { useSpace, domainSpace } from "@/lib/space";
+import { ScreenHead } from "@/components/instrument";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
 const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
@@ -187,12 +188,13 @@ export default function AddPage() {
       )}
       {receiptOpen && <ReceiptScanner onClose={() => setReceiptOpen(false)} />}
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Add stock</h1>
-        <p className="text-sm text-text-muted">
-          Scan a barcode to auto-fill, or type it in.
-        </p>
-      </div>
+      <ScreenHead
+        plate="ADD"
+        pen="pn0"
+        title="Add stock"
+        sub="Scan a barcode to auto-fill, or type it in."
+        className="mb-6"
+      />
 
       {/* Bulk entry: whole receipt at once */}
       <button

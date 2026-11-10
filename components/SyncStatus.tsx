@@ -28,8 +28,8 @@ export function SyncStatus() {
     <span
       className={`chip shrink-0 ring-inset ${
         online
-          ? "bg-brand-100 text-brand-700 ring-brand-500/20 dark:bg-brand-900/30 dark:text-brand-300"
-          : "bg-amber-100 text-amber-700 ring-amber-500/20 dark:bg-amber-900/30 dark:text-amber-300"
+          ? "bg-surface-2 text-ink-3 ring-border"
+          : "bg-watch/12 text-watch ring-watch/30"
       }`}
       title={
         online

@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -61,18 +63,18 @@ function ThingsInner() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Things</h1>
-          <p className="text-sm text-text-muted">
-            Everything around the house, and exactly where it lives.
-          </p>
-        </div>
-        <Link href="/add" className="btn-primary">
-          <PlusCircle className="h-[18px] w-[18px]" />
-          <span className="hidden sm:inline">Add</span>
-        </Link>
-      </div>
+      <ScreenHead
+        plate="THINGS"
+        pen="pn2"
+        title="Things"
+        sub="Everything around the house, and exactly where it lives."
+        actions={
+          <Link href="/add" className="btn-primary">
+            <PlusCircle className="h-[18px] w-[18px]" />
+            <span className="hidden sm:inline">Add</span>
+          </Link>
+        }
+      />
 
       {/* Search + view toggle */}
       <div className="flex flex-wrap items-center gap-2">

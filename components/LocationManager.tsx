@@ -261,7 +261,7 @@ function IconBtn({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`rounded-md p-1.5 text-text-muted hover:bg-surface ${danger ? "hover:text-rose-500" : "hover:text-text"}`}
+      className={`rounded-md p-1.5 text-text-muted hover:bg-surface ${danger ? "hover:text-bad" : "hover:text-text"}`}
     >
       {children}
     </button>

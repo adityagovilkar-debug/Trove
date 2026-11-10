@@ -210,8 +210,8 @@ export default function RecipeDetailPage() {
           className={cn(
             "flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 ring-1 ring-inset",
             match.canMake
-              ? "bg-emerald-500/12 text-emerald-700 ring-emerald-500/30 dark:text-emerald-300"
-              : "bg-amber-400/15 text-amber-800 ring-amber-500/30 dark:text-amber-200",
+              ? "bg-good/10 text-good ring-good/30"
+              : "bg-watch/12 text-watch ring-watch/30",
           )}
         >
           <span className="text-sm font-medium">
@@ -300,9 +300,9 @@ export default function RecipeDetailPage() {
                 {ing.optional ? (
                   <Circle className="h-4 w-4 shrink-0 text-text-muted/40" />
                 ) : have ? (
-                  <Check className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <Check className="h-4 w-4 shrink-0 text-good" />
                 ) : (
-                  <Circle className="h-4 w-4 shrink-0 text-amber-500" />
+                  <Circle className="h-4 w-4 shrink-0 text-watch" />
                 )}
                 <span className={cn("min-w-0 flex-1 break-words", have === false && "text-text")}>
                   {ing.quantity != null && (
@@ -319,7 +319,7 @@ export default function RecipeDetailPage() {
                     </span>
                   )}
                 </span>
-                {have === false && <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">need</span>}
+                {have === false && <span className="mono shrink-0 text-xs uppercase tracking-wider text-watch">need</span>}
               </li>
             );
           })}

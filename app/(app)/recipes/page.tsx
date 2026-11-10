@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Clock, Users, ChefHat, CircleCheck, CalendarClock, X, Globe } from "lucide-react";
@@ -66,26 +68,28 @@ export default function RecipesPage() {
         />
       )}
 
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Recipes</h1>
-          <p className="text-sm text-text-muted">
-            {recipes.length > 0
-              ? `${cookableCount} you can cook right now from your stock.`
-              : "Your home-cooked dishes."}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button className="btn-outline" onClick={() => setImporting(true)}>
-            <Globe className="h-[18px] w-[18px]" />
-            <span className="hidden sm:inline">Find a recipe</span>
-          </button>
-          <button className="btn-primary" onClick={newRecipe}>
-            <Plus className="h-[18px] w-[18px]" />
-            <span className="hidden sm:inline">New recipe</span>
-          </button>
-        </div>
-      </div>
+      <ScreenHead
+        plate="RECIPES"
+        pen="pn6"
+        title="Recipes"
+        sub={
+          recipes.length > 0
+            ? `${cookableCount} you can cook right now from your stock.`
+            : "Your home-cooked dishes."
+        }
+        actions={
+          <>
+            <button className="btn-outline" onClick={() => setImporting(true)}>
+              <Globe className="h-[18px] w-[18px]" />
+              <span className="hidden sm:inline">Find a recipe</span>
+            </button>
+            <button className="btn-primary" onClick={newRecipe}>
+              <Plus className="h-[18px] w-[18px]" />
+              <span className="hidden sm:inline">New recipe</span>
+            </button>
+          </>
+        }
+      />
 
       {meals.length > 0 && (
         <section className="card p-4">
@@ -185,11 +189,11 @@ export default function RecipesPage() {
                     </p>
                   </div>
                   {m.canMake ? (
-                    <span className="chip shrink-0 bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 ring-inset dark:text-emerald-400">
+                    <span className="chip shrink-0 bg-good/12 text-good ring-good/30 ring-inset">
                       <CircleCheck className="h-3 w-3" /> Ready
                     </span>
                   ) : (
-                    <span className="chip shrink-0 bg-amber-400/15 text-amber-700 ring-amber-500/30 ring-inset dark:text-amber-300">
+                    <span className="chip mono shrink-0 bg-watch/12 text-watch ring-watch/30 ring-inset">
                       {m.haveCount}/{m.needCount}
                     </span>
                   )}

@@ -262,15 +262,17 @@ export function ScreenHead({
   sub,
   pen,
   actions,
+  className,
 }: {
   plate?: string;
   title: string;
   sub?: React.ReactNode;
   pen?: string;
   actions?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className={cn("flex items-end justify-between gap-3", pen)}>
+    <div className={cn("flex items-end justify-between gap-3", pen, className)}>
       <div className="min-w-0">
         {plate && <div className="no">{plate}</div>}
         <h1 className="title mt-1 truncate">{title}</h1>

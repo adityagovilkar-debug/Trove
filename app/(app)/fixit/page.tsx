@@ -1,5 +1,7 @@
 "use client";
 
+import { ScreenHead } from "@/components/instrument";
+
 import { useMemo, useState } from "react";
 import { Plus, Check, Trash2, Hammer, MapPin, Flag } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +21,7 @@ import type { HomeTask, TaskPriority } from "@/lib/types";
 
 const PRIORITY_ORDER: Record<TaskPriority, number> = { high: 0, normal: 1, low: 2 };
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
-  high: "bg-rose-500/15 text-rose-600 ring-rose-500/30 dark:text-rose-400",
+  high: "bg-bad/12 text-bad ring-bad/30",
   normal: "bg-surface-2 text-text-muted ring-border",
   low: "bg-surface-2 text-text-muted/70 ring-border",
 };
@@ -75,12 +77,12 @@ export default function FixitPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Fix-it</h1>
-        <p className="text-sm text-text-muted">
-          Things to fix or sort out around the house. Anyone can add, anyone can check off.
-        </p>
-      </div>
+      <ScreenHead
+        plate="FIX-IT"
+        pen="pn2"
+        title="Fix-it"
+        sub="Things to fix or sort out around the house. Anyone can add, anyone can check off."
+      />
 
       {/* Add */}
       <form onSubmit={submit} className="card space-y-3 p-4">
@@ -153,7 +155,7 @@ export default function FixitPage() {
                 </p>
                 <button
                   onClick={() => clearDone.mutate()}
-                  className="text-xs text-text-muted hover:text-rose-500"
+                  className="text-xs text-text-muted hover:text-bad"
                 >
                   Clear
                 </button>
@@ -171,7 +173,7 @@ export default function FixitPage() {
                     <p className="flex-1 truncate text-sm line-through">{t.title}</p>
                     <button
                       onClick={() => del.mutate(t.id)}
-                      className="btn-ghost px-2 py-1.5 text-text-muted hover:text-rose-500"
+                      className="btn-ghost px-2 py-1.5 text-text-muted hover:text-bad"
                       aria-label="Remove"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -225,7 +227,7 @@ function TaskRow({
       )}
       <button
         onClick={onDelete}
-        className="btn-ghost shrink-0 px-2 py-1.5 text-text-muted hover:text-rose-500"
+        className="btn-ghost shrink-0 px-2 py-1.5 text-text-muted hover:text-bad"
         aria-label="Remove"
       >
         <Trash2 className="h-4 w-4" />
