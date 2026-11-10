@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Clock, CreditCard, ShieldCheck, ChefHat, Check, Minus } from "lucide-react";
+import { Clock, Check, Minus } from "lucide-react";
 import { toast } from "sonner";
 import {
   useInventory,
@@ -10,17 +10,18 @@ import {
   useConsume,
   useMarkSubscriptionPaid,
 } from "@/lib/queries";
-import { buildUpcoming, bucketUpcoming, type UpcomingEvent } from "@/lib/upcoming";
+import { buildUpcoming, bucketUpcoming, type UpcomingEvent, type UpcomingKind } from "@/lib/upcoming";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonRows } from "@/components/Skeleton";
+import { ScreenHead, Section, Led } from "@/components/instrument";
 
-const KIND = {
-  expiry: { icon: Clock, tint: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  subscription: { icon: CreditCard, tint: "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300" },
-  warranty: { icon: ShieldCheck, tint: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300" },
-  meal: { icon: ChefHat, tint: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
-} as const;
+const KIND_TAG: Record<UpcomingKind, string> = {
+  expiry: "EXP",
+  subscription: "PAY",
+  warranty: "WTY",
+  meal: "MEAL",
+};
 
 function dueLabel(days: number) {
   if (days < 0) return `${Math.abs(days)}d ago`;
@@ -28,11 +29,13 @@ function dueLabel(days: number) {
   if (days === 1) return "tomorrow";
   return `in ${days}d`;
 }
-function dueColor(days: number) {
-  if (days < 0) return "text-rose-500";
-  if (days <= 3) return "text-orange-500";
-  if (days <= 7) return "text-amber-600 dark:text-amber-400";
-  return "text-text-muted";
+function dueTone(days: number): "bad" | "watch" | "ink" {
+  if (days < 0) return "bad";
+  if (days <= 3) return "watch";
+  return "ink";
+}
+function toneClass(t: "bad" | "watch" | "ink") {
+  return t === "bad" ? "text-bad" : t === "watch" ? "text-watch" : "text-ink-3";
 }
 
 export default function UpcomingPage() {
@@ -63,13 +66,12 @@ export default function UpcomingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Upcoming</h1>
-        <p className="text-sm text-text-muted">
-          Expiries, subscription payments and warranties — in one timeline.
-        </p>
-      </div>
+    <div className="pn5 mx-auto max-w-3xl space-y-6">
+      <ScreenHead
+        plate="UPCOMING"
+        title="Upcoming"
+        sub="Expiries, subscription payments and warranties — one timeline."
+      />
 
       {isLoading ? (
         <SkeletonRows n={3} height="h-16" />
@@ -82,45 +84,42 @@ export default function UpcomingPage() {
       ) : (
         buckets.map((bucket) => (
           <section key={bucket.label} className="space-y-2">
-            <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
-              {bucket.label}
-              <span className="ml-2 font-normal normal-case">{bucket.events.length}</span>
-            </h2>
-            <div className="space-y-2">
-              {bucket.events.map((ev) => {
-                const meta = KIND[ev.kind];
-                const Icon = meta.icon;
-                return (
-                  <div key={ev.id} className="card flex items-center gap-3 p-3">
-                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", meta.tint)}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{ev.title}</p>
-                      <p className="truncate text-xs text-text-muted">{ev.subtitle}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm">{formatDate(ev.date)}</p>
-                      <p className={cn("text-xs font-medium", dueColor(ev.days))}>{dueLabel(ev.days)}</p>
-                    </div>
-                    {ev.amount != null && (
-                      <p className="w-16 shrink-0 text-right text-sm font-medium">
-                        {formatMoney(ev.amount, ev.currency ?? "INR")}
-                      </p>
-                    )}
-                    {ev.kind === "expiry" && (
-                      <button onClick={() => action(ev)} className="btn-outline shrink-0 px-2.5 py-1.5" title="Use one">
-                        <Minus className="h-4 w-4" />
-                      </button>
-                    )}
-                    {ev.kind === "subscription" && (
-                      <button onClick={() => action(ev)} className="btn-outline shrink-0 px-2.5 py-1.5" title="Mark paid">
-                        <Check className="h-4 w-4" />
-                      </button>
-                    )}
+            <Section label={bucket.label} right={<span className="meta">{bucket.events.length}</span>} />
+            <div className="card px-4 py-0">
+              {bucket.events.map((ev) => (
+                <div
+                  key={ev.id}
+                  className="flex items-center gap-3 border-t border-dotted border-rule-strong py-3 first:border-t-0"
+                >
+                  <Led tone={ev.kind === "meal" ? "good" : dueTone(ev.days)} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{ev.title}</p>
+                    <p className="truncate text-xs text-ink-3">
+                      <span className="mono tracking-wider text-ink-3">{KIND_TAG[ev.kind]}</span>
+                      {ev.subtitle ? ` · ${ev.subtitle}` : ""}
+                    </p>
                   </div>
-                );
-              })}
+                  <div className="shrink-0 text-right">
+                    <p className="meta text-xs">{formatDate(ev.date)}</p>
+                    <p className={cn("mono text-xs", toneClass(dueTone(ev.days)))}>{dueLabel(ev.days)}</p>
+                  </div>
+                  {ev.amount != null && (
+                    <p className="mono w-16 shrink-0 text-right text-sm">
+                      {formatMoney(ev.amount, ev.currency ?? "INR")}
+                    </p>
+                  )}
+                  {ev.kind === "expiry" && (
+                    <button onClick={() => action(ev)} className="btn-outline shrink-0 px-2.5 py-1.5" title="Use one">
+                      <Minus className="h-4 w-4" />
+                    </button>
+                  )}
+                  {ev.kind === "subscription" && (
+                    <button onClick={() => action(ev)} className="btn-outline shrink-0 px-2.5 py-1.5" title="Mark paid">
+                      <Check className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         ))

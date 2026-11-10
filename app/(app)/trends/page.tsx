@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -36,6 +34,7 @@ import {
   rebuyFrequency,
 } from "@/lib/trends";
 import { cn, formatMoney } from "@/lib/utils";
+import { DotCols, DotMeter, ScreenHead, Segmented } from "@/components/instrument";
 
 type SortKey = "change" | "spend" | "name";
 
@@ -120,27 +119,15 @@ export default function TrendsPage() {
     );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Trends</h1>
-          <p className="text-sm text-text-muted">What you buy, spend, and waste over time.</p>
-        </div>
-        <div className="flex rounded-xl bg-surface-2 p-1">
-          {RANGES.map((r) => (
-            <button
-              key={r.key}
-              onClick={() => setRange(r.key)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                range === r.key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="pn4 mx-auto max-w-4xl space-y-5">
+      <ScreenHead plate="TRENDS" title="Trends" sub="What you buy, spend, and waste over time." />
+
+      <Segmented
+        className="max-w-xs"
+        value={range}
+        onChange={setRange}
+        options={RANGES.map((r) => ({ value: r.key, label: r.label }))}
+      />
 
       {/* Domain filter */}
       {ref && ref.domains.length > 1 && (
@@ -185,18 +172,23 @@ export default function TrendsPage() {
         {spend.length === 0 ? (
           <Hint text="Add prices when logging stock to see spend." />
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={spend} margin={{ left: -10, right: 8, top: 8 }}>
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
-              <YAxis tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
-              <Tooltip
-                cursor={{ fill: "var(--surface-2)" }}
-                contentStyle={tooltipStyle}
-                formatter={(v) => [formatMoney(Number(v), currency), "Spent"]}
-              />
-              <Bar dataKey="total" fill="var(--color-brand-500)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div>
+            <DotCols
+              values={spend.map((d) => d.total)}
+              width={600}
+              height={72}
+              color="var(--pen)"
+              label="Monthly spend"
+              className="w-full"
+            />
+            <div className="mt-2 flex items-center justify-between text-[9px] font-medium uppercase tracking-[0.12em] text-ink-3">
+              <span>{spend[0].month}</span>
+              <span className="mono tracking-normal">
+                peak {formatMoney(Math.max(...spend.map((d) => d.total)), currency)}
+              </span>
+              <span>{spend[spend.length - 1].month}</span>
+            </div>
+          </div>
         )}
       </section>
 
@@ -434,14 +426,9 @@ function Breakdown({
             <div key={r.label}>
               <div className="flex items-center justify-between text-sm">
                 <span className="truncate">{r.label}</span>
-                <span className="shrink-0 text-text-muted">{formatMoney(r.total, currency)}</span>
+                <span className="mono shrink-0 text-text-muted">{formatMoney(r.total, currency)}</span>
               </div>
-              <div className="mt-1 h-1.5 rounded-full bg-surface-2">
-                <div
-                  className="h-1.5 rounded-full bg-brand-500"
-                  style={{ width: `${Math.max(4, (r.total / max) * 100)}%` }}
-                />
-              </div>
+              <DotMeter frac={r.total / max} n={22} width={260} color="var(--ink)" label={r.label} className="mt-1.5" />
             </div>
           ))}
         </div>
