@@ -101,22 +101,26 @@ function AppShellInner({
           <SpaceToggle />
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1">
-          {NAV.map(({ href, label, icon: Icon, exact }) => (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                isActive(href, exact)
-                  ? "bg-brand-600 text-white"
-                  : "text-text-muted hover:bg-surface-2 hover:text-text",
-              )}
-            >
-              <Icon className="h-[18px] w-[18px]" />
-              {label}
-            </Link>
-          ))}
+        <nav className="flex flex-1 flex-col gap-0.5">
+          {NAV.map(({ href, label, icon: Icon, exact }) => {
+            const on = isActive(href, exact);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "relative flex items-center gap-3 rounded px-3 py-2 text-sm transition-colors",
+                  on
+                    ? "bg-surface-2 font-semibold text-ink"
+                    : "font-medium text-ink-3 hover:bg-surface-2 hover:text-ink",
+                )}
+              >
+                {on && <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 bg-ink" />}
+                <Icon className="h-[18px] w-[18px]" strokeWidth={on ? 2 : 1.6} />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="mt-4 border-t pt-4">

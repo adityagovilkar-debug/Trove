@@ -2,17 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import {
-  Boxes,
-  CreditCard,
-  MapPin,
-  ShieldCheck,
-  Check,
-  Plus,
-  Search,
-  Hammer,
-  Lightbulb,
-} from "lucide-react";
+import { MapPin, Check, Plus, Search, Hammer, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import {
   useInventory,
@@ -29,6 +19,7 @@ import { groupIntoProducts } from "@/lib/products";
 import { rowSpace, domainSpace } from "@/lib/space";
 import { cn, formatMoney, formatDate } from "@/lib/utils";
 import type { PlanStatus } from "@/lib/types";
+import { DotRing, Section, Led } from "@/components/instrument";
 
 const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
   idea: "idea",
@@ -43,15 +34,17 @@ function dueLabel(d: number) {
   if (d === 1) return "tomorrow";
   return `in ${d}d`;
 }
-function dueColor(d: number) {
-  if (d < 0) return "text-rose-500";
-  if (d <= 3) return "text-orange-500";
-  if (d <= 7) return "text-amber-600 dark:text-amber-400";
-  return "text-text-muted";
+function dueTone(d: number): "bad" | "watch" | "ink" {
+  if (d < 0) return "bad";
+  if (d <= 3) return "watch";
+  return "ink";
+}
+function toneClass(t: "bad" | "watch" | "ink") {
+  return t === "bad" ? "text-bad" : t === "watch" ? "text-watch" : "text-ink-3";
 }
 
-// The Home dashboard: the calm half of the house — durables and where they
-// live, warranties, and recurring payments. Food churn stays in Kitchen.
+// The Home dashboard — the calm half of the house: durables and where they
+// live, warranties, payments, fix-its, plans. Food churn stays in Kitchen.
 export default function HomeDashboardPage() {
   const { data: allActive = [], isLoading } = useInventory({ status: "active" });
   const { data: subs = [] } = useSubscriptions();
@@ -62,26 +55,18 @@ export default function HomeDashboardPage() {
   const toggleTask = useToggleHomeTask();
   const locPaths = useLocationPaths();
 
-  const things = useMemo(
-    () => allActive.filter((r) => rowSpace(r) === "home"),
-    [allActive],
-  );
+  const things = useMemo(() => allActive.filter((r) => rowSpace(r) === "home"), [allActive]);
   const groups = useMemo(() => groupIntoProducts(things), [things]);
   const openTasks = useMemo(() => tasks.filter((t) => !t.is_done), [tasks]);
   const activePlans = useMemo(() => plans.filter((p) => p.status !== "done"), [plans]);
   const currency = ref?.household.base_currency ?? "INR";
+  const upkeep = tasks.length ? (tasks.length - openTasks.length) / tasks.length : null;
 
-  // Warranties + payments — the Home space's timeline.
   const upcoming = useMemo(
-    () =>
-      buildUpcoming(things, subs).filter(
-        (e) => e.kind === "warranty" || e.kind === "subscription",
-      ),
+    () => buildUpcoming(things, subs).filter((e) => e.kind === "warranty" || e.kind === "subscription"),
     [things, subs],
   );
-  const warrantiesSoon = upcoming.filter(
-    (e) => e.kind === "warranty" && e.days >= 0 && e.days <= 30,
-  ).length;
+  const warrantiesSoon = upcoming.filter((e) => e.kind === "warranty" && e.days >= 0 && e.days <= 30).length;
 
   const byType = useMemo(() => {
     const counts = new Map<string, { id: string | null; name: string; count: number }>();
@@ -98,53 +83,61 @@ export default function HomeDashboardPage() {
     () => [...things].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5),
     [things],
   );
-
   const homeDomainCount = (ref?.domains ?? []).filter((d) => domainSpace(d) === "home").length;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Home</h1>
-          <p className="mt-1 text-sm text-text-muted">
-            {groups.length} things tracked across the house — search above to find any of them.
-          </p>
+    <div className="pn2 mx-auto max-w-5xl space-y-5">
+      {/* Hero */}
+      <section className="card rise p-0">
+        <div className="flex items-start justify-between gap-4 p-5">
+          <div className="min-w-0">
+            <div className="no">HOME</div>
+            <h1 className="title mt-1.5">Around the house</h1>
+            <p className="mt-1.5 text-sm text-ink-3">
+              {groups.length} things tracked — search above to find any of them.
+            </p>
+          </div>
+          {upkeep != null ? (
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <DotRing frac={upkeep} size={74} n={40} color="var(--pen)" label="House upkeep">
+                <span className="mono text-base font-semibold">
+                  {Math.round(upkeep * 100)}
+                  <span className="u">%</span>
+                </span>
+              </DotRing>
+              <span className="text-[8.5px] uppercase tracking-[0.14em] text-ink-3">Fix-its done</span>
+            </div>
+          ) : null}
         </div>
-        <Link href="/add" className="btn-primary shrink-0">
-          <Plus className="h-[18px] w-[18px]" />
-          <span className="hidden sm:inline">Add a thing</span>
-        </Link>
-      </div>
-
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Boxes} label="Things tracked" value={groups.length} />
-        <Stat
-          icon={Hammer}
-          label="Open fix-its"
-          value={openTasks.length}
-          tone={openTasks.length ? "amber" : undefined}
-        />
-        <Stat
-          icon={ShieldCheck}
-          label="Warranties ≤ 30d"
-          value={warrantiesSoon}
-          tone={warrantiesSoon ? "amber" : undefined}
-        />
-        <Stat icon={Lightbulb} label="Active plans" value={activePlans.length} />
-      </div>
+        <div className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4">
+          <Readout k="Things" v={String(groups.length)} to="/things" />
+          <Readout
+            k="Open fix-its"
+            v={String(openTasks.length)}
+            tone={openTasks.length ? "var(--watch)" : undefined}
+            to="/fixit"
+          />
+          <Readout
+            k="Warranties ≤30d"
+            v={String(warrantiesSoon)}
+            tone={warrantiesSoon ? "var(--watch)" : undefined}
+            to="/upcoming"
+          />
+          <Readout k="Active plans" v={String(activePlans.length)} to="/plans" />
+        </div>
+      </section>
 
       {/* By type */}
       {byType.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-text-muted">By type:</span>
+        <div className="rise i1 flex flex-wrap items-center gap-2">
+          <span className="cap">By type</span>
           {byType.map((d) => (
             <Link
               key={d.name}
               href={d.id ? `/things?domain=${d.id}` : "/things"}
-              className="chip bg-surface-2 text-text-muted ring-border ring-inset transition-colors hover:text-text"
+              className="chip bg-surface text-ink-3 ring-rule ring-inset transition-colors hover:text-ink"
             >
-              {d.name} <span className="font-semibold text-text">{d.count}</span>
+              {d.name} <span className="mono font-semibold text-ink">{d.count}</span>
             </Link>
           ))}
         </div>
@@ -152,222 +145,188 @@ export default function HomeDashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Fix-it preview */}
-        <section className="card p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold">Fix-it</h2>
-            <Link href="/fixit" className="text-xs text-text-muted hover:text-text">
-              All tasks →
-            </Link>
+        <section className="card rise i2 p-4">
+          <Section label="Fix-it" right={<ViewAll href="/fixit" />} />
+          <div className="mt-3">
+            {openTasks.length === 0 ? (
+              <Empty text="Nothing to fix — the house is behaving." />
+            ) : (
+              <ul>
+                {openTasks.slice(0, 5).map((t) => (
+                  <li key={t.id} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
+                    <button
+                      onClick={() => toggleTask.mutate({ id: t.id, is_done: true })}
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-rule-strong transition-colors hover:border-ink"
+                      aria-label="Mark done"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{t.title}</p>
+                      {(t.location_id || t.priority === "high") && (
+                        <p className="flex items-center gap-2 truncate text-xs text-ink-3">
+                          {t.priority === "high" && <span className="font-medium text-bad">high</span>}
+                          {t.location_id && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {locPaths.get(t.location_id) ?? ""}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {openTasks.length === 0 ? (
-            <Empty text="Nothing to fix — the house is behaving. 🔧" />
-          ) : (
-            <div className="divide-y">
-              {openTasks.slice(0, 5).map((t) => (
-                <div key={t.id} className="flex items-center gap-3 py-2.5">
-                  <button
-                    onClick={() => toggleTask.mutate({ id: t.id, is_done: true })}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-border hover:border-brand-500"
-                    aria-label="Mark done"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{t.title}</p>
-                    {(t.location_id || t.priority === "high") && (
-                      <p className="flex items-center gap-2 truncate text-xs text-text-muted">
-                        {t.priority === "high" && (
-                          <span className="font-medium text-rose-500">high priority</span>
-                        )}
-                        {t.location_id && (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {locPaths.get(t.location_id) ?? ""}
-                          </span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </section>
 
         {/* Warranties + payments */}
-        <section className="card p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold">Warranties & payments</h2>
-            <Link href="/subscriptions" className="text-xs text-text-muted hover:text-text">
-              Subscriptions →
-            </Link>
+        <section className="card rise i3 p-4">
+          <Section label="Warranties & payments" right={<ViewAll href="/subscriptions" />} />
+          <div className="mt-3">
+            {upcoming.length === 0 ? (
+              <Empty text="No warranty deadlines or payments coming up." />
+            ) : (
+              <ul>
+                {upcoming.slice(0, 5).map((ev) => (
+                  <li key={ev.id} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
+                    <Led tone={ev.kind === "subscription" ? "ink" : dueTone(ev.days)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{ev.title}</p>
+                      <p className="truncate text-xs text-ink-3">{ev.subtitle}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      {ev.amount != null && (
+                        <p className="mono text-xs">{formatMoney(ev.amount, ev.currency ?? currency)}</p>
+                      )}
+                      <p className={cn("mono text-xs", toneClass(dueTone(ev.days)))}>{dueLabel(ev.days)}</p>
+                    </div>
+                    {ev.kind === "subscription" && ev.subscription && (
+                      <button
+                        onClick={() =>
+                          markPaid.mutate(ev.subscription!, {
+                            onSuccess: () => toast.success(`Recorded payment for ${ev.title}`),
+                          })
+                        }
+                        className="btn-ghost shrink-0 px-2 py-1.5"
+                        title="Mark paid"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {upcoming.length === 0 ? (
-            <Empty text="No warranty deadlines or payments coming up." />
-          ) : (
-            <div className="divide-y">
-              {upcoming.slice(0, 5).map((ev) => (
-                <div key={ev.id} className="flex items-center gap-3 py-2.5">
-                  <div
-                    className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                      ev.kind === "subscription"
-                        ? "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"
-                        : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
-                    )}
-                  >
-                    {ev.kind === "subscription" ? (
-                      <CreditCard className="h-4 w-4" />
-                    ) : (
-                      <ShieldCheck className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{ev.title}</p>
-                    <p className="truncate text-xs text-text-muted">{ev.subtitle}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    {ev.amount != null && (
-                      <p className="text-xs font-medium">{formatMoney(ev.amount, ev.currency ?? currency)}</p>
-                    )}
-                    <p className={cn("text-xs font-medium", dueColor(ev.days))}>{dueLabel(ev.days)}</p>
-                  </div>
-                  {ev.kind === "subscription" && ev.subscription && (
-                    <button
-                      onClick={() =>
-                        markPaid.mutate(ev.subscription!, {
-                          onSuccess: () => toast.success(`Recorded payment for ${ev.title}`),
-                        })
-                      }
-                      className="btn-ghost shrink-0 px-2 py-1.5"
-                      title="Mark paid"
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </section>
 
-        {/* Recently added things */}
-        <section className="card p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold">Recently added</h2>
-            <Link href="/things" className="text-xs text-text-muted hover:text-text">
-              All things →
-            </Link>
+        {/* Recently added */}
+        <section className="card rise i4 p-4">
+          <Section label="Recently added" right={<ViewAll href="/things" />} />
+          <div className="mt-3">
+            {isLoading ? (
+              <Empty text="Loading…" />
+            ) : recent.length === 0 ? (
+              <Empty text={`Nothing here yet — add your first thing (${homeDomainCount} types to choose from).`} />
+            ) : (
+              <ul>
+                {recent.map((r) => (
+                  <li key={r.id} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {r.item_name}
+                        {r.item_brand && <span className="font-normal text-ink-3"> · {r.item_brand}</span>}
+                      </p>
+                      <p className="flex items-center gap-1 truncate text-xs text-ink-3">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {(r.location_id && locPaths.get(r.location_id)) || r.location_name || "Unfiled"}
+                      </p>
+                    </div>
+                    <span className="meta shrink-0 text-xs">{formatDate(r.purchase_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {isLoading ? (
-            <Empty text="Loading…" />
-          ) : recent.length === 0 ? (
-            <Empty text={`Nothing here yet — add your first thing (${homeDomainCount} types to choose from).`} />
-          ) : (
-            <div className="divide-y">
-              {recent.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {r.item_name}
-                      {r.item_brand && <span className="font-normal text-text-muted"> · {r.item_brand}</span>}
-                    </p>
-                    <p className="flex items-center gap-1 truncate text-xs text-text-muted">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      {(r.location_id && locPaths.get(r.location_id)) || r.location_name || "Unfiled"}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs text-text-muted">{formatDate(r.purchase_date)}</span>
-                </div>
+        </section>
+
+        {/* Plans */}
+        {activePlans.length > 0 && (
+          <section className="card rise i4 p-4">
+            <Section label="Plans" right={<ViewAll href="/plans" />} />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {activePlans.slice(0, 6).map((p) => (
+                <Link
+                  key={p.id}
+                  href="/plans"
+                  className="chip bg-surface text-ink ring-rule ring-inset transition-colors hover:bg-surface-2"
+                >
+                  {p.title}
+                  <span className="text-ink-3">· {PLAN_STATUS_LABEL[p.status]}</span>
+                  {p.budget != null && <span className="mono font-medium">· {formatMoney(p.budget, currency)}</span>}
+                </Link>
               ))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
-
-      {/* Plans preview */}
-      {activePlans.length > 0 && (
-        <section className="card p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <Lightbulb className="h-4 w-4 text-brand-500" />
-              Plans
-            </h2>
-            <Link href="/plans" className="text-xs text-text-muted hover:text-text">
-              All plans →
-            </Link>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {activePlans.slice(0, 6).map((p) => (
-              <Link
-                key={p.id}
-                href="/plans"
-                className="chip bg-surface-2 text-text ring-border ring-inset transition-colors hover:bg-surface"
-              >
-                {p.title}
-                <span className="text-text-muted">· {PLAN_STATUS_LABEL[p.status]}</span>
-                {p.budget != null && (
-                  <span className="font-medium">· {formatMoney(p.budget, currency)}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <QuickAction href="/fixit" icon={Hammer} label="Fix-it" />
         <QuickAction href="/plans" icon={Lightbulb} label="Plans" />
-        <QuickAction href="/subscriptions" icon={CreditCard} label="Subscriptions" />
+        <QuickAction href="/add" icon={Plus} label="Add a thing" />
         <button
           onClick={() => window.dispatchEvent(new Event("trove:command"))}
-          className="card flex items-center justify-center gap-2 p-3 text-sm font-medium hover:bg-surface-2"
+          className="card flex items-center justify-center gap-2 p-3 text-xs font-semibold uppercase tracking-[0.08em] hover:bg-surface-2"
         >
-          <Search className="h-[18px] w-[18px] text-brand-500" />
-          Where is… · ⌘K
+          <Search className="h-[18px] w-[18px]" />
+          Where is… ⌘K
         </button>
       </div>
     </div>
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: typeof Boxes;
-  label: string;
-  value: number | string;
-  tone?: "amber";
-}) {
-  return (
-    <div className="card p-4">
-      <div
-        className={cn(
-          "mb-3 inline-flex rounded-lg p-2",
-          tone === "amber"
-            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-            : "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300",
-        )}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-      <p className="mono text-2xl font-semibold">{value}</p>
-      <p className="cap mt-1">{label}</p>
-    </div>
+function Readout({ k, v, tone, to }: { k: string; v: string; tone?: string; to?: string }) {
+  const body = (
+    <>
+      <span className="k">{k}</span>
+      <span className="v" style={tone ? { color: tone } : undefined}>
+        {v}
+      </span>
+    </>
+  );
+  return to ? (
+    <Link href={to} className="ro transition-colors hover:bg-surface-2">
+      {body}
+    </Link>
+  ) : (
+    <div className="ro">{body}</div>
   );
 }
 
-function QuickAction({ href, icon: Icon, label }: { href: string; icon: typeof Boxes; label: string }) {
+function ViewAll({ href }: { href: string }) {
   return (
-    <Link href={href} className="card flex items-center justify-center gap-2 p-3 text-sm font-medium hover:bg-surface-2">
-      <Icon className="h-[18px] w-[18px] text-brand-500" />
+    <Link href={href} className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3 hover:text-ink">
+      View all
+    </Link>
+  );
+}
+
+function QuickAction({ href, icon: Icon, label }: { href: string; icon: typeof Hammer; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="card flex items-center justify-center gap-2 p-3 text-center text-xs font-semibold uppercase tracking-[0.08em] hover:bg-surface-2"
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
       {label}
     </Link>
   );
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="py-6 text-center text-sm text-text-muted">{text}</p>;
+  return <p className="py-6 text-center text-sm text-ink-3">{text}</p>;
 }
