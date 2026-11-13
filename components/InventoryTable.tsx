@@ -147,7 +147,7 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
       {/* Grouping toggle — only when something actually blends brands. */}
       {hasBrandBlend && (
         <div className="mb-3 flex items-center justify-end">
-          <div className="flex rounded-lg bg-surface-2 p-0.5 text-xs">
+          <div className="flex rounded-[3px] border border-rule bg-surface-2 p-[3px] text-[11px] font-semibold uppercase tracking-[0.08em]">
             {[
               [false, "Rollup"],
               [true, "By brand"],
@@ -157,7 +157,7 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                 onClick={() => setByBrand(val as boolean)}
                 className={cn(
                   "rounded-md px-2.5 py-1 font-medium transition-colors",
-                  byBrand === val ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+                  byBrand === val ? "bg-surface text-ink shadow-[inset_0_-2px_0_var(--ink)]" : "text-text-muted hover:text-text",
                 )}
               >
                 {lbl}
@@ -183,9 +183,9 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
 
       {/* Desktop: full table */}
       <div className="card hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
-            <tr className="border-b text-left text-xs uppercase tracking-wide text-text-muted">
+            <tr className="border-b text-left text-[10.5px] uppercase tracking-[0.14em] text-ink-3">
               <th className="w-8 px-2 py-3" />
               <Th label="Product" onClick={() => toggleSort("name")} active={sort.key === "name"} />
               <Th label="In stock" onClick={() => toggleSort("totalQty")} active={sort.key === "totalQty"} />
@@ -212,21 +212,18 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                         {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </button>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{g.name}</span>
-                        {g.domainName && (
-                          <span className="chip bg-surface-2 text-text-muted ring-border ring-inset">
-                            {g.domainName}
-                          </span>
-                        )}
-                      </div>
-                      {g.brands.length > 0 && (
-                        <div className="text-xs text-text-muted">{g.brands.join(" · ")}</div>
+                    <td className="min-w-[200px] px-4 py-3">
+                      <div className="font-medium">{g.name}</div>
+                      {(g.brands.length > 0 || g.domainName) && (
+                        <div className="text-xs text-ink-3">
+                          {[...g.brands, g.domainName ? g.domainName.toUpperCase() : null]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="font-medium">
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span className="mono font-medium">
                         {g.totalQty}
                         {g.unit ? ` ${g.unit}` : ""}
                       </span>
@@ -237,20 +234,20 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                         <span className="ml-1 text-xs text-text-muted">({g.lotCount} lots)</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-muted">
+                    <td className="max-w-[220px] px-4 py-3 text-xs text-text-muted">
                       {groupLocations(g.lots, locPaths).join(", ") || "—"}
                     </td>
                     <td className="px-4 py-3">
                       {g.nearestExpiryDays != null ? (
-                        <span className={cn("chip ring-inset", EXPIRY_STYLES[bucket])}>
+                        <span className={cn("chip mono ring-inset", EXPIRY_STYLES[bucket])}>
                           {expiryLabel(g.nearestExpiryDays)}
                         </span>
                       ) : (
                         <span className="text-text-muted">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-muted">{formatMoney(g.totalValue, g.currency)}</td>
-                    <td className="px-4 py-3 text-text-muted">{formatDate(g.lastPurchase)}</td>
+                    <td className="mono px-4 py-3 text-text-muted">{formatMoney(g.totalValue, g.currency)}</td>
+                    <td className="mono px-4 py-3 text-text-muted">{formatDate(g.lastPurchase)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => useOne(g)} disabled={consume.isPending} className="btn-outline px-2.5 py-1.5" title="Use one (oldest/soonest-to-expire first)">
@@ -338,14 +335,14 @@ function LotRow({
       </td>
       <td className="px-4 py-2">
         {lot.expiry_date ? (
-          <span className={cn("chip ring-inset", EXPIRY_STYLES[bucket])}>
+          <span className={cn("chip mono ring-inset", EXPIRY_STYLES[bucket])}>
             {expiryLabel(lot.days_to_expiry)}
           </span>
         ) : (
           "—"
         )}
       </td>
-      <td className="px-4 py-2 text-text-muted">{formatMoney(lot.price, lot.currency)}</td>
+      <td className="mono px-4 py-2 text-text-muted">{formatMoney(lot.price, lot.currency)}</td>
       <td />
       <td className="px-4 py-2">
         <div className="flex items-center justify-end gap-1">
@@ -430,7 +427,7 @@ function ProductCardMobile({
               <div className="mt-0.5 truncate text-xs text-text-muted">{g.brands.join(" · ")}</div>
             )}
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
-              <span className="font-medium text-text">
+              <span className="mono font-medium text-ink">
                 {g.totalQty}
                 {g.unit ? ` ${g.unit}` : ""}
               </span>
@@ -442,11 +439,11 @@ function ProductCardMobile({
                   {locs.join(", ")}
                 </span>
               )}
-              {g.totalValue > 0 && <span>{formatMoney(g.totalValue, g.currency)}</span>}
+              {g.totalValue > 0 && <span className="mono">{formatMoney(g.totalValue, g.currency)}</span>}
             </div>
           </div>
           {g.nearestExpiryDays != null && (
-            <span className={cn("chip shrink-0 ring-inset", EXPIRY_STYLES[bucket])}>
+            <span className={cn("chip mono shrink-0 ring-inset", EXPIRY_STYLES[bucket])}>
               {expiryLabel(g.nearestExpiryDays)}
             </span>
           )}

@@ -137,7 +137,7 @@ export default function RecipesPage() {
             className={cn(
               "chip ring-inset transition-colors",
               cookableOnly
-                ? "bg-brand-600 text-white ring-brand-600"
+                ? "bg-ink text-paper ring-ink"
                 : "bg-surface text-text-muted ring-border hover:text-text",
             )}
           >

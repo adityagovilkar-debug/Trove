@@ -25,22 +25,39 @@ export function inRange(lots: InventoryDetail[], key: RangeKey): InventoryDetail
 }
 
 // Spend grouped by month (YYYY-MM) → label + total, chronological.
-export function monthlySpend(lots: InventoryDetail[]) {
+// Every calendar month from `start` (or the earliest purchase) to this month,
+// including months with no spend — so averages divide by real elapsed months
+// and charts show the quiet months instead of silently skipping them.
+export function monthlySpend(lots: InventoryDetail[], start?: string | null) {
   const m = new Map<string, number>();
+  let first: string | null = null;
   for (const l of lots) {
     if (l.price == null) continue;
     const k = l.purchase_date.slice(0, 7);
     m.set(k, (m.get(k) ?? 0) + Number(l.price));
+    if (!first || k < first) first = k;
   }
-  return [...m.entries()]
-    .sort()
-    .map(([month, total]) => ({
-      month: new Date(month + "-01").toLocaleDateString(undefined, {
-        month: "short",
-        year: "2-digit",
-      }),
-      total: Math.round(total),
-    }));
+  const from = (start ?? first)?.slice(0, 7);
+  if (!from) return [];
+  const now = new Date();
+  const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const out: { key: string; month: string; total: number }[] = [];
+  let [y, mo] = from.split("-").map(Number);
+  for (let guard = 0; guard < 600; guard++) {
+    const key = `${y}-${String(mo).padStart(2, "0")}`;
+    if (key > end) break;
+    out.push({
+      key,
+      month: new Date(y, mo - 1, 1).toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
+      total: Math.round(m.get(key) ?? 0),
+    });
+    mo++;
+    if (mo > 12) {
+      mo = 1;
+      y++;
+    }
+  }
+  return out;
 }
 
 // Spend grouped by an arbitrary label (category, store…), largest first.

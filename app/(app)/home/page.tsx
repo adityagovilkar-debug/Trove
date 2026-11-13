@@ -109,7 +109,7 @@ export default function HomeDashboardPage() {
             </div>
           ) : null}
         </div>
-        <div className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4">
+        <div className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4" data-loading={isLoading || undefined}>
           <Readout k="Things" v={String(groups.length)} to="/things" />
           <Readout
             k="Open fix-its"
@@ -156,7 +156,7 @@ export default function HomeDashboardPage() {
                   <li key={t.id} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
                     <button
                       onClick={() => toggleTask.mutate({ id: t.id, is_done: true })}
-                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-rule-strong transition-colors hover:border-ink"
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-ink-3 transition-colors hover:border-ink"
                       aria-label="Mark done"
                     />
                     <div className="min-w-0 flex-1">
@@ -190,7 +190,7 @@ export default function HomeDashboardPage() {
               <ul>
                 {upcoming.slice(0, 5).map((ev) => (
                   <li key={ev.id} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
-                    <Led tone={ev.kind === "subscription" ? "ink" : dueTone(ev.days)} />
+                    <Led tone={dueTone(ev.days)} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{ev.title}</p>
                       <p className="truncate text-xs text-ink-3">{ev.subtitle}</p>

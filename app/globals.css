@@ -21,6 +21,16 @@
   --radius-xl: 4px;
   --radius-2xl: 5px;
   --radius-3xl: 6px;
+
+  /* No soft glows: flat surfaces sit on hairlines; only floating layers
+     (popovers, palette, menus) get one crisp lift. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: var(--lift);
+  --shadow-lg: var(--lift);
+  --shadow-xl: var(--lift);
+  --shadow-2xl: var(--lift);
 }
 
 :root {
@@ -43,6 +53,7 @@
   --good: #0e7c63;
   --watch: #b07500;
   --bad: #c8321a;
+  --lift: 0 10px 24px -14px rgb(18 20 26 / 0.22);
   --r: 3px;
 
   /* legacy names, re-pointed */
@@ -75,6 +86,7 @@
   --good: #2bc29b;
   --watch: #e0a526;
   --bad: #ff6b4f;
+  --lift: 0 0 0 1px rgb(0 0 0 / 0.35), 0 10px 24px -12px rgb(0 0 0 / 0.7);
 }
 
 @theme inline {
@@ -118,8 +130,14 @@
   --color-brand-900: var(--ink);
 }
 
-* {
-  border-color: var(--rule);
+/* Default hairline colour. Must live in the base layer: unlayered, it would
+   outrank every border-* colour utility (border-ink, border-rule-strong…). */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--rule);
+  }
 }
 
 body {
@@ -239,6 +257,7 @@ body {
     @apply mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-3;
   }
   .chip {
+    white-space: nowrap;
     @apply inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium ring-1 ring-inset;
     border-radius: var(--r);
   }
@@ -322,3 +341,18 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Readouts while their data loads: a row of unlit dots, never a fake "0". */
+.readouts[data-loading] .v {
+  color: transparent !important;
+  width: 3.6em;
+  background: radial-gradient(circle, var(--ink-4) 1.3px, transparent 1.8px) 0 50% / 7px 7px repeat-x;
+  animation: trv-wait 1.2s ease-in-out infinite;
+}
+@keyframes trv-wait { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .readouts[data-loading] .v { animation: none; } }
+
+/* Dialog backdrop: ink-tinted on Paper (the page stays legible behind it),
+   deeper on Backlit. A hair of blur separates the layers without glow. */
+.scrim { background: rgb(18 20 26 / 0.38); backdrop-filter: blur(2px); }
+.dark .scrim { background: rgb(0 0 0 / 0.62); }

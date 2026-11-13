@@ -64,15 +64,15 @@ function InventoryInner() {
       />
 
       {/* Status tabs */}
-      <div className="flex flex-wrap gap-1 rounded-xl bg-surface-2 p-1">
+      <div className="flex flex-wrap gap-1 rounded-[3px] border border-rule bg-surface-2 p-[3px]">
         {STATUS_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setStatus(t.key)}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+              "rounded-[3px] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors",
               status === t.key
-                ? "bg-surface text-text shadow-sm"
+                ? "bg-surface text-ink shadow-[inset_0_-2px_0_var(--ink)]"
                 : "text-text-muted hover:text-text",
             )}
           >
@@ -155,7 +155,7 @@ function FilterChip({
       onClick={onClick}
       className={cn(
         "chip ring-border transition-colors",
-        active ? "bg-brand-600 text-white ring-brand-600" : "bg-surface text-text-muted hover:text-text",
+        active ? "bg-ink text-paper ring-ink" : "bg-surface text-text-muted hover:text-text",
       )}
     >
       {children}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -51,6 +52,15 @@ const HOME_NAV = [
   { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },
 ];
 
+const SHARED = new Set(["/add", "/settings"]);
+function routeSpace(pathname: string): "kitchen" | "home" | null {
+  const match = (nav: typeof KITCHEN_NAV) =>
+    nav.some((n) => !SHARED.has(n.href) && (n.exact ? pathname === n.href : pathname.startsWith(n.href) && n.href !== "/"));
+  if (match(HOME_NAV)) return "home";
+  if (match(KITCHEN_NAV)) return "kitchen";
+  return null;
+}
+
 export function AppShell(props: {
   email: string;
   name: string;
@@ -74,8 +84,15 @@ function AppShellInner({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { space } = useSpace();
+  const { space, setSpace } = useSpace();
   const NAV = space === "kitchen" ? KITCHEN_NAV : HOME_NAV;
+
+  // A route that belongs to only one space pulls the shell into that space,
+  // so deep links, the back button and ⌘K jumps always show the right nav.
+  useEffect(() => {
+    const owner = routeSpace(pathname);
+    if (owner && owner !== space) setSpace(owner);
+  }, [pathname, space, setSpace]);
   const MOBILE_NAV = NAV.filter((n) => n.mobile);
 
   function isActive(href: string, exact?: boolean) {
@@ -181,11 +198,11 @@ function AppShellInner({
             href={href}
             className={cn(
               "relative flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors",
-              isActive(href, exact) ? "text-brand-600" : "text-text-muted",
+              isActive(href, exact) ? "font-semibold text-ink" : "text-ink-3",
             )}
           >
             {isActive(href, exact) && (
-              <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-brand-600" />
+              <span className="absolute inset-x-5 top-0 h-0.5 bg-ink" />
             )}
             <Icon className="h-5 w-5" />
             {short}

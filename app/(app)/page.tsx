@@ -148,7 +148,7 @@ export default function DashboardPage() {
             <span className="text-[8.5px] uppercase tracking-[0.14em] text-ink-3">Used · no waste</span>
           </div>
         </div>
-        <div className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4">
+        <div className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4" data-loading={isLoading || undefined}>
           <Readout k="Groceries" v={String(groceryCount)} to="/inventory" />
           <Readout
             k="Expiring ≤7d"

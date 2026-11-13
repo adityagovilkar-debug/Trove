@@ -230,7 +230,7 @@ export function LocationPicker({
                   <button
                     type="button"
                     onClick={() => setCreating(true)}
-                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-brand-700 hover:bg-surface-2 dark:text-brand-300"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-ink hover:bg-surface-2"
                   >
                     <Plus className="h-4 w-4 shrink-0" />
                     Create “{query.trim()}”

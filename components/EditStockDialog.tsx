@@ -82,7 +82,7 @@ export function EditStockDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center scrim p-0 sm:items-center sm:p-4">
       <div className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border bg-bg sm:rounded-2xl">
         <div className="flex items-center justify-between border-b bg-surface px-4 py-3">
           <p className="font-semibold">Edit entry</p>

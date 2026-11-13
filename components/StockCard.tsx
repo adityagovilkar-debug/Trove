@@ -78,13 +78,13 @@ export function StockCard({ row }: { row: InventoryDetail }) {
     <div className="card flex items-center gap-3 p-3">
       <div
         className={cn(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-semibold uppercase",
-          isActive ? "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300" : "bg-surface-2 text-text-muted",
+          "mono flex h-12 w-12 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold uppercase tracking-wider",
+          isActive ? "bg-surface-2 text-ink ring-1 ring-inset ring-border" : "bg-surface-2 text-text-muted",
         )}
       >
         {row.item_image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={row.item_image_url} alt="" className="h-12 w-12 rounded-xl object-cover" />
+          <img src={row.item_image_url} alt="" className="h-12 w-12 rounded-[3px] object-cover" />
         ) : (
           row.item_name.slice(0, 2)
         )}
@@ -102,7 +102,7 @@ export function StockCard({ row }: { row: InventoryDetail }) {
           )}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
-          <span className="font-medium text-text">
+          <span className="mono font-medium text-ink">
             {packLabel(row) ?? `${row.quantity}${row.unit ? ` ${row.unit}` : ""}`}
             {packTotal(row) && (
               <span className="ml-1 font-normal text-text-muted">({packTotal(row)})</span>
@@ -123,13 +123,13 @@ export function StockCard({ row }: { row: InventoryDetail }) {
               {row.store_name}
             </span>
           )}
-          {row.price != null && <span>{formatMoney(row.price, row.currency)}</span>}
-          <span>Bought {formatDate(row.purchase_date)}</span>
+          {row.price != null && <span className="mono">{formatMoney(row.price, row.currency)}</span>}
+          <span>Bought <span className="mono">{formatDate(row.purchase_date)}</span></span>
         </div>
       </div>
 
       {row.expiry_date && (
-        <span className={cn("chip shrink-0", EXPIRY_STYLES[bucket])}>
+        <span className={cn("chip mono shrink-0 ring-inset", EXPIRY_STYLES[bucket])}>
           {expiryLabel(row.days_to_expiry)}
         </span>
       )}
@@ -236,7 +236,7 @@ function MenuItem({
     <button
       onMouseDown={onClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2",
+        "flex w-full items-center gap-2 rounded-[3px] px-3 py-2 text-sm hover:bg-surface-2",
         danger && "text-bad",
       )}
     >

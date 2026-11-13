@@ -131,7 +131,7 @@ export function ScanLabelButton({
           className={cn(
             "chip ring-inset",
             badge.smart
-              ? "bg-brand-100 text-brand-700 ring-brand-500/20 dark:bg-brand-900/30 dark:text-brand-300"
+              ? "bg-surface-2 text-ink ring-border"
               : "bg-surface-2 text-text-muted ring-border",
           )}
           title={

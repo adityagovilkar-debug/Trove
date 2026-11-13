@@ -11,10 +11,6 @@ import {
   YAxis,
 } from "recharts";
 import {
-  TrendingUp,
-  Wallet,
-  Trash2,
-  Gauge,
   Search,
   ChevronDown,
   ChevronRight,
@@ -27,6 +23,7 @@ import {
   type RangeKey,
   inRange,
   monthlySpend,
+  rangeStart,
   spendBy,
   spendBetween,
   priceTrends,
@@ -56,7 +53,7 @@ export default function TrendsPage() {
   const lots = useMemo(() => inRange(domainLots, range), [domainLots, range]);
   const currency = all[0]?.currency ?? "INR";
 
-  const spend = useMemo(() => monthlySpend(lots), [lots]);
+  const spend = useMemo(() => monthlySpend(lots, rangeStart(range)), [lots, range]);
   const trends = useMemo(() => priceTrends(lots), [lots]);
   const inflation = useMemo(() => basketInflation(trends), [trends]);
   const byCategory = useMemo(() => spendBy(lots, (l) => l.category_name).slice(0, 6), [lots]);
@@ -143,16 +140,15 @@ export default function TrendsPage() {
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Wallet} label={`Spent · ${range === "all" ? "all time" : range.toUpperCase()}`} value={formatMoney(totalSpent, currency)} />
-        <Stat icon={TrendingUp} label="Avg / month" value={formatMoney(Math.round(totalSpent / months), currency)} />
-        <Stat icon={Trash2} label="Wasted" value={formatMoney(Math.round(wasted), currency)} tone={wasted > 0 ? "rose" : undefined} />
+      {/* Readouts */}
+      <div className="readouts grid-cols-2 lg:grid-cols-4" data-loading={isLoading || undefined}>
+        <Stat label={`Spent · ${range === "all" ? "all time" : range.toUpperCase()}`} value={formatMoney(totalSpent, currency)} />
+        <Stat label="Avg / month" value={formatMoney(Math.round(totalSpent / months), currency)} />
+        <Stat label="Wasted" value={formatMoney(Math.round(wasted), currency)} tone={wasted > 0 ? "bad" : undefined} />
         <Stat
-          icon={Gauge}
           label="Basket inflation"
           value={inflation == null ? "—" : `${inflation > 0 ? "+" : ""}${inflation}%`}
-          tone={inflation != null && inflation > 0 ? "rose" : inflation != null && inflation < 0 ? "brand" : undefined}
+          tone={inflation != null && inflation > 0 ? "bad" : inflation != null && inflation < 0 ? "good" : undefined}
         />
       </div>
 
@@ -169,7 +165,7 @@ export default function TrendsPage() {
             )}
           </span>
         </div>
-        {spend.length === 0 ? (
+        {totalSpent === 0 ? (
           <Hint text="Add prices when logging stock to see spend." />
         ) : (
           <div>
@@ -207,7 +203,7 @@ export default function TrendsPage() {
                 onClick={() => setSort(k)}
                 className={cn(
                   "rounded-md px-2 py-1 font-medium",
-                  sort === k ? "bg-surface text-text shadow-sm" : "text-text-muted",
+                  sort === k ? "bg-surface text-ink shadow-[inset_0_-2px_0_var(--ink)]" : "text-text-muted",
                 )}
               >
                 {lbl}
@@ -355,30 +351,13 @@ const tooltipStyle = {
   color: "var(--text)",
 };
 
-const TONES: Record<string, string> = {
-  brand: "bg-surface-2 text-ink ring-1 ring-inset ring-border",
-  rose: "bg-bad/12 text-bad ring-1 ring-inset ring-bad/30",
-  slate: "bg-surface-2 text-text-muted",
-};
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  tone = "slate",
-}: {
-  icon: typeof Wallet;
-  label: string;
-  value: string;
-  tone?: keyof typeof TONES;
-}) {
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "good" | "bad" }) {
   return (
-    <div className="card p-4">
-      <div className={`mb-3 inline-flex rounded-lg p-2 ${TONES[tone]}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <p className="mono text-xl font-semibold">{value}</p>
-      <p className="cap mt-1">{label}</p>
+    <div className="ro">
+      <span className="k">{label}</span>
+      <span className={cn("v text-xl", tone === "bad" && "text-bad", tone === "good" && "text-good")}>{value}</span>
     </div>
   );
 }
@@ -451,7 +430,7 @@ function Chip({
       onClick={onClick}
       className={cn(
         "chip ring-border ring-inset transition-colors",
-        active ? "bg-brand-600 text-white ring-brand-600" : "bg-surface text-text-muted hover:text-text",
+        active ? "bg-ink text-paper ring-ink" : "bg-surface text-text-muted hover:text-text",
       )}
     >
       {children}

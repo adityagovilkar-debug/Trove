@@ -165,7 +165,7 @@ export default function FixitPage() {
                   <div key={t.id} className="flex items-center gap-3 p-3">
                     <button
                       onClick={() => toggle.mutate({ id: t.id, is_done: false })}
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] bg-ink text-paper"
                       aria-label="Reopen"
                     >
                       <Check className="h-4 w-4" />
@@ -204,7 +204,7 @@ function TaskRow({
     <div className="flex items-center gap-3 p-3">
       <button
         onClick={onToggle}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-border hover:border-brand-500"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-ink-3 hover:border-ink"
         aria-label="Mark done"
       />
       <div className="min-w-0 flex-1">

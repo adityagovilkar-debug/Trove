@@ -39,7 +39,7 @@ export function ConsumeAmountDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center scrim p-0 sm:items-center sm:p-4">
       <div className="w-full max-w-sm rounded-t-2xl border bg-bg sm:rounded-2xl">
         <div className="flex items-center justify-between border-b bg-surface px-4 py-3">
           <div>

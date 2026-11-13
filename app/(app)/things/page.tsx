@@ -87,7 +87,7 @@ function ThingsInner() {
             className="input pl-10"
           />
         </div>
-        <div className="flex rounded-xl bg-surface-2 p-1">
+        <div className="flex rounded-[3px] border border-rule bg-surface-2 p-[3px]">
           {(
             [
               { key: "location", label: "By location", icon: MapIcon },
@@ -98,8 +98,8 @@ function ThingsInner() {
               key={key}
               onClick={() => setView(key)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                view === key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+                "flex items-center gap-1.5 rounded-[3px] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors",
+                view === key ? "bg-surface text-ink shadow-[inset_0_-2px_0_var(--ink)]" : "text-text-muted hover:text-text",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -169,7 +169,7 @@ function FilterChip({
       onClick={onClick}
       className={cn(
         "chip ring-border transition-colors",
-        active ? "bg-brand-600 text-white ring-brand-600" : "bg-surface text-text-muted hover:text-text",
+        active ? "bg-ink text-paper ring-ink" : "bg-surface text-text-muted hover:text-text",
       )}
     >
       {children}

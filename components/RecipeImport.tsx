@@ -41,7 +41,7 @@ export function RecipeImport({
   const browsing = q.trim().length < 2;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center scrim p-0 sm:items-center sm:p-4">
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border bg-bg sm:rounded-2xl">
         <div className="flex items-center justify-between border-b bg-surface px-4 py-3">
           <p className="flex items-center gap-2 font-semibold">
@@ -94,7 +94,7 @@ export function RecipeImport({
                 <div className="flex items-center gap-2">
                   <p className="truncate font-medium">{r.name}</p>
                   {r.source === "local" && (
-                    <span className="chip shrink-0 bg-brand-100 text-brand-700 ring-brand-500/30 ring-inset dark:bg-brand-900/40 dark:text-brand-300">
+                    <span className="chip shrink-0 bg-surface-2 text-ink ring-border ring-inset">
                       regional
                     </span>
                   )}

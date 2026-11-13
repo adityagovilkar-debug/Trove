@@ -4,8 +4,6 @@ import { useMemo, useState } from "react";
 import {
   Plus,
   CreditCard,
-  CalendarClock,
-  Wallet,
   Check,
   Pencil,
   Trash2,
@@ -71,15 +69,13 @@ export default function SubscriptionsPage() {
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={Wallet} label="Per month" value={formatMoney(totals.monthly, currency)} />
-        <Stat icon={CreditCard} label="Per year" value={formatMoney(totals.yearly, currency)} />
-        <Stat icon={CalendarClock} label="Active" value={active.length} />
+      <div className="readouts grid-cols-2 lg:grid-cols-4" data-loading={isLoading || undefined}>
+        <Stat label="Per month" value={formatMoney(totals.monthly, currency)} />
+        <Stat label="Per year" value={formatMoney(totals.yearly, currency)} />
+        <Stat label="Active" value={active.length} />
         <Stat
-          icon={CalendarClock}
-          label="Next payment"
+          label={nextDue ? `Next · ${nextDue.name}` : "Next payment"}
           value={nextDue ? formatDate(nextDue.next_payment) : "—"}
-          sub={nextDue?.name}
         />
       </div>
 
@@ -96,7 +92,7 @@ export default function SubscriptionsPage() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[680px] text-sm">
             <thead>
-              <tr className="border-b text-left text-xs uppercase tracking-wide text-text-muted">
+              <tr className="border-b text-left text-[10.5px] uppercase tracking-[0.14em] text-ink-3">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Cycle</th>
@@ -114,7 +110,7 @@ export default function SubscriptionsPage() {
                   s.billing_cycle;
                 return (
                   <tr key={s.id} className="border-b last:border-0 hover:bg-surface-2/50">
-                    <td className="px-4 py-3">
+                    <td className="min-w-[150px] px-4 py-3">
                       <div className="font-medium">{s.name}</div>
                       {s.category && (
                         <div className="text-xs text-text-muted">{s.category}</div>
@@ -130,7 +126,7 @@ export default function SubscriptionsPage() {
                     <td className="px-4 py-3">
                       {s.next_payment ? (
                         <div>
-                          <div className="mono">{formatDate(s.next_payment)}</div>
+                          <div className="mono whitespace-nowrap">{formatDate(s.next_payment)}</div>
                           {s.status === "active" && d != null && (
                             <span
                               className={cn(
@@ -207,24 +203,11 @@ export default function SubscriptionsPage() {
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: typeof Wallet;
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
+function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="card p-4">
-      <div className="mb-3 inline-flex rounded-[3px] bg-surface-2 p-2 text-ink-3 ring-1 ring-inset ring-border">
-        <Icon className="h-5 w-5" />
-      </div>
-      <p className="mono truncate text-xl font-semibold">{value}</p>
-      <p className="cap mt-1 truncate normal-case tracking-[0.1em]">{sub ? `${label} · ${sub}` : label}</p>
+    <div className="ro">
+      <span className="k">{label}</span>
+      <span className="v text-xl">{value}</span>
     </div>
   );
 }

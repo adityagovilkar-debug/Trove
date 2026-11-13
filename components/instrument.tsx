@@ -165,31 +165,39 @@ export function DotCols({
   const rows = Math.floor((height - 4) / step);
   const cw = width / values.length;
   const max = Math.max(1e-9, ...values);
+  // Few values → each column becomes a small dot matrix (up to 5 dots wide)
+  // so a 6-month chart doesn't read as two lonely specks.
+  const across = Math.max(1, Math.min(5, Math.floor((cw * 0.55) / step)));
   const dots: React.ReactNode[] = [];
   values.forEach((v, i) => {
-    const x = i * cw + cw / 2;
+    const cx = i * cw + cw / 2;
     const scaled = Math.sqrt(Math.max(0, v) / max);
     const lit = v > 0 ? Math.max(1, Math.round(scaled * rows)) : 0;
     const isLast = i === values.length - 1;
-    if (lit === 0) {
-      dots.push(
-        <circle key={`${i}-b`} cx={x} cy={height - 2} r={1} style={{ fill: "var(--ink-4)" }} />,
-      );
-      return;
-    }
-    for (let j = 0; j < lit; j++) {
-      const top = j === lit - 1;
-      dots.push(
-        <circle
-          key={`${i}-${j}`}
-          className="dt"
-          cx={x}
-          cy={height - 2 - j * step}
-          r={top ? 1.75 : 1.05}
-          opacity={top ? 1 : 0.16 + (0.34 * j) / rows}
-          style={{ fill: isLast ? lastColor : color, animationDelay: `${140 + Math.min(i, 30) * 16}ms` }}
-        />,
-      );
+    for (let k = 0; k < across; k++) {
+      const x = cx + (k - (across - 1) / 2) * step;
+      for (let j = 0; j < rows; j++) {
+        const y = height - 2 - j * step;
+        if (j >= lit) {
+          // Unlit track — always drawn so the scale reads, even at zero.
+          dots.push(
+            <circle key={`${i}-${k}-${j}`} cx={x} cy={y} r={0.75} style={{ fill: "var(--ink-4)" }} opacity={0.55} />,
+          );
+          continue;
+        }
+        const top = j === lit - 1;
+        dots.push(
+          <circle
+            key={`${i}-${k}-${j}`}
+            className="dt"
+            cx={x}
+            cy={y}
+            r={top ? 1.6 : 1.05}
+            opacity={top ? 1 : 0.28 + (0.5 * j) / rows}
+            style={{ fill: isLast ? lastColor : color, animationDelay: `${140 + Math.min(i, 30) * 16}ms` }}
+          />,
+        );
+      }
     }
   });
   return (

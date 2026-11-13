@@ -96,7 +96,7 @@ export default function ShoppingPage() {
                 <div key={it.id} className="flex items-center gap-3 p-3">
                   <button
                     onClick={() => toggle.mutate({ id: it.id, is_bought: true })}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-border hover:border-brand-500"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-ink-3 hover:border-ink"
                     aria-label="Mark bought"
                   />
                   <div className="min-w-0 flex-1">
@@ -155,7 +155,7 @@ export default function ShoppingPage() {
                   <div key={it.id} className="flex items-center gap-3 p-3">
                     <button
                       onClick={() => toggle.mutate({ id: it.id, is_bought: false })}
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] bg-ink text-paper"
                       aria-label="Mark not bought"
                     >
                       <Check className="h-4 w-4" />

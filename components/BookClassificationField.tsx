@@ -52,7 +52,7 @@ export function BookClassificationField({
             type="button"
             onClick={() => setSystem(s)}
             className={`rounded-md px-2.5 py-1 font-medium capitalize transition-colors ${
-              system === s ? "bg-surface text-text shadow-sm" : "text-text-muted"
+              system === s ? "bg-surface text-ink shadow-[inset_0_-2px_0_var(--ink)]" : "text-text-muted"
             }`}
           >
             {s === "dewey" ? "Dewey" : s}

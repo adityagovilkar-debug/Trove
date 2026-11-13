@@ -40,12 +40,14 @@ export function expiryLabel(days: number | null | undefined): string {
   return `${days} days left`;
 }
 
+// Instrument tones: only urgency carries colour. Healthy stock reads as
+// plain ink — green is reserved for "good" outcomes, not "nothing wrong".
 export const EXPIRY_STYLES: Record<ExpiryBucket, string> = {
-  expired: "bg-rose-500/15 text-rose-600 dark:text-rose-400 ring-rose-500/30",
-  critical: "bg-orange-500/15 text-orange-600 dark:text-orange-400 ring-orange-500/30",
-  soon: "bg-amber-400/15 text-amber-600 dark:text-amber-400 ring-amber-500/30",
-  ok: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-emerald-500/30",
-  none: "bg-slate-400/10 text-slate-500 dark:text-slate-400 ring-slate-400/20",
+  expired: "bg-bad/12 text-bad ring-bad/35",
+  critical: "bg-bad/8 text-bad ring-bad/25",
+  soon: "bg-watch/12 text-watch ring-watch/30",
+  ok: "bg-surface-2 text-ink-2 ring-border",
+  none: "bg-surface-2 text-ink-3 ring-border",
 };
 
 export function formatDate(d: string | null | undefined): string {

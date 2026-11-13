@@ -203,7 +203,7 @@ export function CommandPalette() {
   let idx = -1;
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 p-4 pt-[12vh]"
+      className="fixed inset-0 z-[60] flex items-start justify-center scrim p-4 pt-[12vh]"
       onMouseDown={close}
     >
       <div

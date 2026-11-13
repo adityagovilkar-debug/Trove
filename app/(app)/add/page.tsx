@@ -202,7 +202,7 @@ export default function AddPage() {
         onClick={() => setReceiptOpen(true)}
         className="card mb-5 flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-surface-2"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink ring-1 ring-inset ring-border">
           <Receipt className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
@@ -229,7 +229,7 @@ export default function AddPage() {
                 }}
                 className={`chip ring-border ${
                   domainId === d.id
-                    ? "bg-brand-600 text-white ring-brand-600"
+                    ? "bg-ink text-paper ring-ink"
                     : "bg-surface text-text-muted hover:text-text"
                 }`}
               >
