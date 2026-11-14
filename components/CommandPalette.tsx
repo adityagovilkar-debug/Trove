@@ -7,24 +7,18 @@ import {
   LayoutDashboard,
   CalendarClock,
   Boxes,
-  ChefHat,
+  Package,
   ShoppingCart,
   PlusCircle,
-  CreditCard,
-  LineChart,
   Settings,
   SunMoon,
   LogOut,
   MapPin,
   CornerDownLeft,
-  Home,
-  CookingPot,
   Hammer,
-  Lightbulb,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useStockSearch } from "@/lib/queries";
-import { useSpace } from "@/lib/space";
 import { cn } from "@/lib/utils";
 
 interface Action {
@@ -39,7 +33,6 @@ interface Action {
 // Also opens on a window "trove:command" event (fired by the header button).
 export function CommandPalette() {
   const router = useRouter();
-  const { space, setSpace } = useSpace();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
@@ -115,34 +108,19 @@ export function CommandPalette() {
 
   const actions: Action[] = useMemo(
     () => [
-      {
-        id: "space",
-        label: space === "kitchen" ? "Switch to Home space" : "Switch to Kitchen space",
-        icon: space === "kitchen" ? Home : CookingPot,
-        run: () => {
-          const next = space === "kitchen" ? "home" : "kitchen";
-          setSpace(next);
-          go(next === "kitchen" ? "/" : "/home");
-        },
-      },
-      { id: "dash", label: "Kitchen dashboard", icon: LayoutDashboard, run: () => go("/") },
-      { id: "homedash", label: "Home dashboard", icon: Home, run: () => go("/home") },
+      { id: "dash", label: "Dashboard", icon: LayoutDashboard, run: () => go("/") },
       { id: "up", label: "Upcoming", icon: CalendarClock, run: () => go("/upcoming") },
       { id: "inv", label: "Pantry", icon: Boxes, run: () => go("/inventory") },
-      { id: "things", label: "Things", icon: Boxes, run: () => go("/things") },
+      { id: "things", label: "Things", icon: Package, run: () => go("/things") },
       { id: "fixit", label: "Fix-it", icon: Hammer, run: () => go("/fixit") },
-      { id: "plans", label: "Plans", icon: Lightbulb, run: () => go("/plans") },
-      { id: "recipes", label: "Recipes", icon: ChefHat, run: () => go("/recipes") },
       { id: "shop", label: "Shopping list", icon: ShoppingCart, run: () => go("/shopping") },
-      { id: "add", label: "Add stock", icon: PlusCircle, run: () => go("/add") },
-      { id: "subs", label: "Subscriptions", icon: CreditCard, run: () => go("/subscriptions") },
-      { id: "trends", label: "Trends", icon: LineChart, run: () => go("/trends") },
+      { id: "add", label: "Add something", icon: PlusCircle, run: () => go("/add") },
       { id: "settings", label: "Settings", icon: Settings, run: () => go("/settings") },
       { id: "theme", label: "Toggle light / dark", icon: SunMoon, run: toggleTheme },
       { id: "out", label: "Sign out", icon: LogOut, run: signOut },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [space],
+    [],
   );
 
   const q = query.trim().toLowerCase();

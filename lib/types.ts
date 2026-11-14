@@ -95,33 +95,6 @@ export interface InventoryDetail {
   domain_space?: Space | null; // optional until migration 0013 has run
 }
 
-export type BillingCycle =
-  | "weekly"
-  | "monthly"
-  | "quarterly"
-  | "yearly"
-  | "custom";
-
-export type SubscriptionStatus = "active" | "paused" | "cancelled";
-
-export interface Subscription {
-  id: string;
-  household_id: string;
-  name: string;
-  category: string | null;
-  price: number;
-  currency: string;
-  billing_cycle: BillingCycle;
-  cycle_days: number | null;
-  next_payment: string | null;
-  start_date: string | null;
-  payment_method: string | null;
-  status: SubscriptionStatus;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ShoppingItem {
   id: string;
   household_id: string;
@@ -130,44 +103,10 @@ export interface ShoppingItem {
   quantity: number | null;
   unit: string | null;
   item_id: string | null;
-  source: "manual" | "restock" | "finished" | "recipe";
+  source: "manual" | "restock" | "finished" | "recipe"; // "recipe" = legacy rows
   is_bought: boolean;
   bought_at: string | null;
   created_at: string;
-}
-
-export interface RecipeIngredient {
-  id: string;
-  recipe_id: string;
-  household_id: string;
-  name: string;
-  quantity: number | null;
-  unit: string | null;
-  item_id: string | null;
-  optional: boolean;
-  staple: boolean; // pantry staple — not auto-deducted when you cook the recipe
-  sort_order: number;
-}
-
-export interface Recipe {
-  id: string;
-  household_id: string;
-  name: string;
-  description: string | null;
-  instructions: string | null;
-  servings: number | null;
-  prep_minutes: number | null;
-  cook_minutes: number | null;
-  category: string | null;
-  cuisine: string | null;
-  image_url: string | null;
-  source: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RecipeWithIngredients extends Recipe {
-  ingredients: RecipeIngredient[];
 }
 
 export type TaskPriority = "low" | "normal" | "high";
@@ -184,34 +123,6 @@ export interface HomeTask {
   done_at: string | null;
   created_at: string;
   updated_at: string;
-}
-
-export type PlanStatus = "idea" | "planned" | "in_progress" | "done";
-
-// A plan: a renovation / major-purchase idea moving through status lanes.
-export interface Plan {
-  id: string;
-  household_id: string;
-  title: string;
-  notes: string | null;
-  category: string | null;
-  status: PlanStatus;
-  budget: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MealPlan {
-  id: string;
-  household_id: string;
-  recipe_id: string;
-  plan_date: string;
-  note: string | null;
-  created_at: string;
-}
-
-export interface MealPlanWithRecipe extends MealPlan {
-  recipe_name: string;
 }
 
 // Reference data bundled together for forms/filters.

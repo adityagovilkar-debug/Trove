@@ -1,7 +1,6 @@
-import type { InventoryDetail, Subscription, MealPlanWithRecipe } from "./types";
-import { daysUntil } from "./subscriptions";
+import type { InventoryDetail } from "./types";
 
-export type UpcomingKind = "expiry" | "subscription" | "warranty" | "meal";
+export type UpcomingKind = "expiry" | "warranty";
 
 export interface UpcomingEvent {
   id: string;
@@ -10,35 +9,22 @@ export interface UpcomingEvent {
   days: number; // days until (negative = overdue/expired)
   title: string;
   subtitle: string;
-  amount: number | null;
-  currency: string | null;
-  inventory?: InventoryDetail;
-  subscription?: Subscription;
+  inventory: InventoryDetail;
 }
 
-// Merge food expiries, subscription payments and warranty deadlines into one
-// chronological stream.
-export function buildUpcoming(
-  inventory: InventoryDetail[],
-  subscriptions: Subscription[],
-  meals: MealPlanWithRecipe[] = [],
-): UpcomingEvent[] {
-  const events: UpcomingEvent[] = [];
+// Whole days from today (local) until a YYYY-MM-DD date; negative = past.
+export function daysUntil(date: string | null | undefined): number | null {
+  if (!date) return null;
+  const [y, m, d] = date.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const today = new Date();
+  const a = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((Date.UTC(y, m - 1, d) - a) / 86_400_000);
+}
 
-  for (const m of meals) {
-    const d = daysUntil(m.plan_date);
-    if (d == null) continue;
-    events.push({
-      id: `meal-${m.id}`,
-      kind: "meal",
-      date: m.plan_date,
-      days: d,
-      title: m.recipe_name,
-      subtitle: "Planned meal",
-      amount: null,
-      currency: null,
-    });
-  }
+// Food expiries and warranty deadlines, as one chronological stream.
+export function buildUpcoming(inventory: InventoryDetail[]): UpcomingEvent[] {
+  const events: UpcomingEvent[] = [];
 
   for (const r of inventory) {
     if (r.status !== "active") continue;
@@ -53,13 +39,10 @@ export function buildUpcoming(
         subtitle: `${r.quantity}${r.unit ? " " + r.unit : ""}${
           r.location_name ? " · " + r.location_name : ""
         }`,
-        amount: null,
-        currency: null,
         inventory: r,
       });
     }
 
-    // Electronics (and anything else) warranty deadlines from attributes.
     const warranty = r.item_attributes?.["warranty_until"];
     if (typeof warranty === "string" && warranty) {
       const d = daysUntil(warranty);
@@ -71,29 +54,10 @@ export function buildUpcoming(
           days: d,
           title: r.item_name,
           subtitle: "Warranty ends",
-          amount: null,
-          currency: null,
           inventory: r,
         });
       }
     }
-  }
-
-  for (const s of subscriptions) {
-    if (s.status !== "active" || !s.next_payment) continue;
-    const d = daysUntil(s.next_payment);
-    if (d == null) continue;
-    events.push({
-      id: `sub-${s.id}`,
-      kind: "subscription",
-      date: s.next_payment,
-      days: d,
-      title: s.name,
-      subtitle: s.category ? `${s.category} payment` : "Payment due",
-      amount: s.price,
-      currency: s.currency,
-      subscription: s,
-    });
   }
 
   return events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));

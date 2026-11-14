@@ -9,7 +9,6 @@ import { AttributeFields } from "./AttributeFields";
 import { LocationPicker } from "./LocationPicker";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
-const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
 
 export function EditStockDialog({
   row,
@@ -26,8 +25,8 @@ export function EditStockDialog({
   const [categoryId, setCategoryId] = useState(row.category_id ?? "");
   const [quantity, setQuantity] = useState(String(row.quantity));
   const [unit, setUnit] = useState(row.unit ?? "pcs");
-  const [packSize, setPackSize] = useState(row.pack_size != null ? String(row.pack_size) : "");
-  const [packSizeUnit, setPackSizeUnit] = useState(row.pack_size_unit ?? "g");
+  const [packSize] = useState(row.pack_size != null ? String(row.pack_size) : "");
+  const [packSizeUnit] = useState(row.pack_size_unit ?? "g");
   const [price, setPrice] = useState(row.price != null ? String(row.price) : "");
   const [purchaseDate, setPurchaseDate] = useState(row.purchase_date);
   const [expiryDate, setExpiryDate] = useState(row.expiry_date ?? "");
@@ -149,36 +148,6 @@ export function EditStockDialog({
                   <option key={s.id} value={s.name} />
                 ))}
               </datalist>
-            </div>
-          </div>
-
-          <div className="card p-4">
-            <label className="label">Each unit contains (optional)</label>
-            <div className="flex items-center gap-2">
-              <input
-                className="input w-24"
-                type="number"
-                min="0"
-                step="any"
-                value={packSize}
-                onChange={(e) => setPackSize(e.target.value)}
-                placeholder="50"
-                inputMode="decimal"
-              />
-              <select className="input w-24" value={packSizeUnit} onChange={(e) => setPackSizeUnit(e.target.value)}>
-                {PACK_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-text-muted">
-                {packSize && Number(packSize) > 0
-                  ? `${quantity || 0} × ${packSize} ${packSizeUnit} = ${
-                      Math.round(Number(quantity || 0) * Number(packSize) * 100) / 100
-                    } ${packSizeUnit} total`
-                  : "leave blank for a flat quantity"}
-              </p>
             </div>
           </div>
 

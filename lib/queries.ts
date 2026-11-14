@@ -17,18 +17,10 @@ import type {
   Location,
   RefData,
   Store,
-  Subscription,
   ShoppingItem,
-  Recipe,
-  RecipeIngredient,
-  RecipeWithIngredients,
-  MealPlanWithRecipe,
   HomeTask,
   TaskPriority,
-  Plan,
-  PlanStatus,
 } from "@/lib/types";
-import { advancePayment } from "@/lib/subscriptions";
 import { buildPathMap } from "@/lib/locations";
 import { useMemo } from "react";
 
@@ -171,6 +163,10 @@ export function useSwitchHousehold() {
 // ---------------------------------------------------------------------------
 // Reference data (household, domains, categories, locations, stores)
 // ---------------------------------------------------------------------------
+// Kinds retired in the 2026-11 rework (books live in Stacks; plants and
+// luggage are "Other" + tags). Hidden from pickers; rows are left untouched.
+const RETIRED_DOMAINS = new Set(["book", "plant", "luggage"]);
+
 export function useRefData() {
   const { data: householdId } = useHouseholdId();
   return useQuery({
@@ -211,7 +207,7 @@ export function useRefData() {
       if (err) throw err;
       return {
         household: household.data,
-        domains: (domains.data ?? []) as Domain[],
+        domains: ((domains.data ?? []) as Domain[]).filter((d) => !RETIRED_DOMAINS.has(d.key)),
         categories: (categories.data ?? []) as Category[],
         locations: (locations.data ?? []) as Location[],
         stores: (stores.data ?? []) as Store[],
@@ -747,82 +743,6 @@ export function useTrendsData() {
 }
 
 // ---------------------------------------------------------------------------
-// Subscriptions (recurring payments)
-// ---------------------------------------------------------------------------
-export function useSubscriptions() {
-  const { data: householdId } = useHouseholdId();
-  return useQuery({
-    queryKey: ["subscriptions", householdId],
-    enabled: !!householdId,
-    queryFn: async (): Promise<Subscription[]> => {
-      const sb = supabaseBrowser();
-      const { data, error } = await sb
-        .from("subscriptions")
-        .select("*")
-        .eq("household_id", householdId!)
-        .order("next_payment", { ascending: true, nullsFirst: false });
-      if (error) throw error;
-      return (data ?? []) as Subscription[];
-    },
-  });
-}
-
-export type SubscriptionInput = Omit<
-  Subscription,
-  "id" | "household_id" | "created_at" | "updated_at"
-> & { id?: string };
-
-export function useUpsertSubscription() {
-  const qc = useQueryClient();
-  const { data: householdId } = useHouseholdId();
-  return useMutation({
-    mutationFn: async (input: SubscriptionInput) => {
-      const sb = supabaseBrowser();
-      const { id, ...fields } = input;
-      if (id) {
-        const { error } = await sb.from("subscriptions").update(fields).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await sb
-          .from("subscriptions")
-          .insert({ household_id: householdId, ...fields });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
-  });
-}
-
-export function useDeleteSubscription() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const sb = supabaseBrowser();
-      const { error } = await sb.from("subscriptions").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
-  });
-}
-
-// Record a payment: advance next_payment by one billing cycle.
-export function useMarkSubscriptionPaid() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (sub: Subscription) => {
-      const sb = supabaseBrowser();
-      const next = advancePayment(sub);
-      const { error } = await sb
-        .from("subscriptions")
-        .update({ next_payment: next })
-        .eq("id", sub.id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Shopping list
 // ---------------------------------------------------------------------------
 export function useShoppingList() {
@@ -984,186 +904,6 @@ export function useClearBought() {
 }
 
 // ---------------------------------------------------------------------------
-// Recipes
-// ---------------------------------------------------------------------------
-export function useRecipes() {
-  const { data: householdId } = useHouseholdId();
-  return useQuery({
-    queryKey: ["recipes", householdId],
-    enabled: !!householdId,
-    queryFn: async (): Promise<RecipeWithIngredients[]> => {
-      const sb = supabaseBrowser();
-      const { data, error } = await sb
-        .from("recipes")
-        .select("*, recipe_ingredients(*)")
-        .eq("household_id", householdId!)
-        .order("name");
-      if (error) throw error;
-      return (data ?? []).map((r: Recipe & { recipe_ingredients?: RecipeIngredient[] }) => ({
-        ...r,
-        ingredients: (r.recipe_ingredients ?? []).sort(
-          (a, b) => a.sort_order - b.sort_order,
-        ),
-      })) as RecipeWithIngredients[];
-    },
-  });
-}
-
-export function useRecipe(id: string | undefined) {
-  const { data: all } = useRecipes();
-  return useMemo(() => all?.find((r) => r.id === id), [all, id]);
-}
-
-export interface RecipeIngredientInput {
-  name: string;
-  quantity?: number | null;
-  unit?: string | null;
-  itemId?: string | null;
-  optional?: boolean;
-  staple?: boolean;
-}
-
-export interface RecipeInput {
-  id?: string;
-  name: string;
-  description?: string | null;
-  instructions?: string | null;
-  servings?: number | null;
-  prepMinutes?: number | null;
-  cookMinutes?: number | null;
-  category?: string | null;
-  cuisine?: string | null;
-  ingredients: RecipeIngredientInput[];
-}
-
-export function useUpsertRecipe() {
-  const qc = useQueryClient();
-  const { data: householdId } = useHouseholdId();
-  return useMutation({
-    mutationFn: async (input: RecipeInput): Promise<string> => {
-      const sb = supabaseBrowser();
-      const payload = {
-        household_id: householdId,
-        name: input.name,
-        description: input.description ?? null,
-        instructions: input.instructions ?? null,
-        servings: input.servings ?? null,
-        prep_minutes: input.prepMinutes ?? null,
-        cook_minutes: input.cookMinutes ?? null,
-        category: input.category ?? null,
-        cuisine: input.cuisine ?? null,
-      };
-      let recipeId = input.id;
-      if (recipeId) {
-        const { error } = await sb.from("recipes").update(payload).eq("id", recipeId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await sb.from("recipes").insert(payload).select("id").single();
-        if (error) throw error;
-        recipeId = data.id as string;
-      }
-      // Replace the ingredient set.
-      await sb.from("recipe_ingredients").delete().eq("recipe_id", recipeId);
-      const rows = input.ingredients
-        .filter((i) => i.name.trim())
-        .map((i, idx) => ({
-          recipe_id: recipeId,
-          household_id: householdId,
-          name: i.name.trim(),
-          quantity: i.quantity ?? null,
-          unit: i.unit ?? null,
-          item_id: i.itemId ?? null,
-          optional: i.optional ?? false,
-          staple: i.staple ?? false,
-          sort_order: idx,
-        }));
-      if (rows.length) {
-        const { error } = await sb.from("recipe_ingredients").insert(rows);
-        if (error) throw error;
-      }
-      return recipeId;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
-  });
-}
-
-export function useDeleteRecipe() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const sb = supabaseBrowser();
-      const { error } = await sb.from("recipes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["recipes"] }),
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Meal plans
-// ---------------------------------------------------------------------------
-export function useMealPlans() {
-  const { data: householdId } = useHouseholdId();
-  return useQuery({
-    queryKey: ["meal-plans", householdId],
-    enabled: !!householdId,
-    queryFn: async (): Promise<MealPlanWithRecipe[]> => {
-      const sb = supabaseBrowser();
-      const today = new Date().toISOString().slice(0, 10);
-      const { data, error } = await sb
-        .from("meal_plans")
-        .select("*, recipes(name)")
-        .eq("household_id", householdId!)
-        .gte("plan_date", today)
-        .order("plan_date");
-      if (error) throw error;
-      return (data ?? []).map(
-        (m: MealPlanWithRecipe & { recipes?: { name: string } | null }) => ({
-          ...m,
-          recipe_name: m.recipes?.name ?? "Recipe",
-        }),
-      );
-    },
-  });
-}
-
-export interface MealPlanInput {
-  recipeId: string;
-  planDate: string;
-  note?: string | null;
-}
-
-export function useAddMealPlan() {
-  const qc = useQueryClient();
-  const { data: householdId } = useHouseholdId();
-  return useMutation({
-    mutationFn: async (input: MealPlanInput) => {
-      const sb = supabaseBrowser();
-      const { error } = await sb.from("meal_plans").insert({
-        household_id: householdId,
-        recipe_id: input.recipeId,
-        plan_date: input.planDate,
-        note: input.note ?? null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["meal-plans"] }),
-  });
-}
-
-export function useDeleteMealPlan() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const sb = supabaseBrowser();
-      const { error } = await sb.from("meal_plans").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["meal-plans"] }),
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Fix-it tasks (Home space) — the household's shared fridge-note.
 // ---------------------------------------------------------------------------
 export function useHomeTasks() {
@@ -1267,98 +1007,5 @@ export function useClearDoneTasks() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["home-tasks"] }),
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Plans (Home space) — the renovation / major-purchase ideas board.
-// ---------------------------------------------------------------------------
-export function usePlans() {
-  const { data: householdId } = useHouseholdId();
-  return useQuery({
-    queryKey: ["plans", householdId],
-    enabled: !!householdId,
-    queryFn: async (): Promise<Plan[]> => {
-      const sb = supabaseBrowser();
-      const { data, error } = await sb
-        .from("plans")
-        .select("*")
-        .eq("household_id", householdId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Plan[];
-    },
-  });
-}
-
-export interface PlanInput {
-  id?: string;
-  title: string;
-  notes?: string | null;
-  category?: string | null;
-  status?: PlanStatus;
-  budget?: number | null;
-}
-
-export function useUpsertPlan() {
-  const qc = useQueryClient();
-  const { data: householdId } = useHouseholdId();
-  return useMutation({
-    mutationFn: async (input: PlanInput) => {
-      const sb = supabaseBrowser();
-      const fields = {
-        title: input.title,
-        notes: input.notes ?? null,
-        category: input.category ?? null,
-        status: input.status ?? "idea",
-        budget: input.budget ?? null,
-      };
-      if (input.id) {
-        const { error } = await sb.from("plans").update(fields).eq("id", input.id);
-        if (error) throw error;
-      } else {
-        const { data: auth } = await sb.auth.getUser();
-        const { error } = await sb.from("plans").insert({
-          household_id: householdId,
-          created_by: auth.user?.id ?? null,
-          ...fields,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["plans"] }),
-  });
-}
-
-export function useSetPlanStatus() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: PlanStatus }) => {
-      const sb = supabaseBrowser();
-      const { error } = await sb.from("plans").update({ status }).eq("id", id);
-      if (error) throw error;
-    },
-    onMutate: async ({ id, status }) => {
-      await qc.cancelQueries({ queryKey: ["plans"] });
-      const snap = qc.getQueriesData({ queryKey: ["plans"] }) as Snapshot;
-      qc.setQueriesData<Plan[]>({ queryKey: ["plans"] }, (old) =>
-        old?.map((p) => (p.id === id ? { ...p, status } : p)),
-      );
-      return { snap };
-    },
-    onError: (_e, _v, ctx) => rollback(qc, ctx?.snap),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["plans"] }),
-  });
-}
-
-export function useDeletePlan() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const sb = supabaseBrowser();
-      const { error } = await sb.from("plans").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["plans"] }),
   });
 }

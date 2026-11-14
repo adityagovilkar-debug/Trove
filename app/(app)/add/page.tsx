@@ -2,20 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ScanLine, Loader2, Receipt, ChevronRight } from "lucide-react";
+import { ScanLine, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAddStock, useRefData, useTrendsData } from "@/lib/queries";
-import { lookupBarcode, lookupBook } from "@/lib/barcode";
+import { lookupBarcode } from "@/lib/barcode";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { ReceiptScanner } from "@/components/ReceiptScanner";
 import { AttributeFields } from "@/components/AttributeFields";
 import { ProductSearch } from "@/components/ProductSearch";
 import { LocationPicker } from "@/components/LocationPicker";
-import { useSpace, domainSpace } from "@/lib/space";
+import { domainSpace } from "@/lib/space";
 import { ScreenHead } from "@/components/instrument";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
-const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function AddPage() {
@@ -24,7 +22,6 @@ export default function AddPage() {
   const addStock = useAddStock();
 
   const [scanning, setScanning] = useState(false);
-  const [receiptOpen, setReceiptOpen] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
 
   // form state
@@ -36,8 +33,6 @@ export default function AddPage() {
   const [categoryId, setCategoryId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState("pcs");
-  const [packSize, setPackSize] = useState("");
-  const [packSizeUnit, setPackSizeUnit] = useState("g");
   const [price, setPrice] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(today());
   const [expiryDate, setExpiryDate] = useState("");
@@ -48,7 +43,6 @@ export default function AddPage() {
 
   const currency = ref?.household.base_currency ?? "INR";
   const selectedDomain = ref?.domains.find((d) => d.id === domainId);
-  const { space } = useSpace();
   const { data: history = [] } = useTrendsData();
 
   // The location you usually keep each type in, from your history — so picking
@@ -76,14 +70,12 @@ export default function AddPage() {
     return out;
   }, [history]);
 
-  // Default the type to match the space you're adding from: Kitchen → the
-  // grocery domain, Home → the first home-space domain. Only while nothing
-  // is picked yet — never override a choice.
+  // Default the type to food (the most common add) while nothing is picked.
   useEffect(() => {
     if (domainId || !ref?.domains?.length) return;
-    const def = ref.domains.find((d) => domainSpace(d) === space);
-    if (def) setDomainId(def.id);
-  }, [domainId, ref?.domains, space]);
+    const def = ref.domains.find((d) => d.key === "grocery") ?? ref.domains[0];
+    setDomainId(def.id);
+  }, [domainId, ref?.domains]);
 
   // Pre-fill the usual location for the chosen type — once per type, so it
   // never fights you clearing or changing the spot.
@@ -108,23 +100,6 @@ export default function AddPage() {
     setScanning(false);
     setBarcode(code);
     setLookingUp(true);
-    // Books carry ISBNs — look them up in Open Library instead of food data.
-    if (selectedDomain?.key === "book") {
-      const book = await lookupBook(code);
-      setLookingUp(false);
-      setAttributes((a) => ({
-        ...a,
-        isbn: code,
-        author: book?.author ?? (a.author as string) ?? "",
-      }));
-      if (book) {
-        setName(book.title);
-        toast.success(`Found: ${book.title}`);
-      } else {
-        toast.message("ISBN saved — fill in the title.");
-      }
-      return;
-    }
     const product = await lookupBarcode(code);
     setLookingUp(false);
     if (product) {
@@ -140,7 +115,6 @@ export default function AddPage() {
   function reset() {
     setName(""); setBrand(""); setBarcode(""); setImageUrl(null);
     setCategoryId(""); setQuantity("1"); setUnit("pcs"); setPrice("");
-    setPackSize("");
     setExpiryDate(""); setStoreName(""); setNotes(""); setAttributes({});
     setPurchaseDate(today());
   }
@@ -158,8 +132,8 @@ export default function AddPage() {
         categoryId: categoryId || null,
         quantity: Number(quantity) || 1,
         unit,
-        packSize: packSize ? Number(packSize) : null,
-        packSizeUnit: packSize ? packSizeUnit : null,
+        packSize: null,
+        packSizeUnit: null,
         price: price ? Number(price) : null,
         currency,
         purchaseDate,
@@ -173,7 +147,7 @@ export default function AddPage() {
         onSuccess: () => {
           toast.success(`Added “${name.trim()}”`);
           if (addAnother) reset();
-          else router.push("/inventory");
+          else router.push(selectedDomain && domainSpace(selectedDomain) === "home" ? "/things" : "/inventory");
         },
         onError: (err) =>
           toast.error(err instanceof Error ? err.message : "Failed to add"),
@@ -186,33 +160,14 @@ export default function AddPage() {
       {scanning && (
         <BarcodeScanner onDetect={handleScanned} onClose={() => setScanning(false)} />
       )}
-      {receiptOpen && <ReceiptScanner onClose={() => setReceiptOpen(false)} />}
 
       <ScreenHead
         plate="ADD"
         pen="pn0"
-        title="Add stock"
+        title="Add something"
         sub="Scan a barcode to auto-fill, or type it in."
         className="mb-6"
       />
-
-      {/* Bulk entry: whole receipt at once */}
-      <button
-        type="button"
-        onClick={() => setReceiptOpen(true)}
-        className="card mb-5 flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-surface-2"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink ring-1 ring-inset ring-border">
-          <Receipt className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-medium">Scan a receipt</span>
-          <span className="block text-xs text-text-muted">
-            Add a whole shopping trip in one go
-          </span>
-        </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-text-muted" />
-      </button>
 
       <form onSubmit={(e) => onSubmit(e, false)} className="space-y-5">
         {/* Domain selector */}
@@ -318,7 +273,7 @@ export default function AddPage() {
           )}
         </div>
 
-        {/* Domain-specific details (electronics, books, …) */}
+        {/* Kind-specific details (electronics) */}
         <AttributeFields
           domainKey={selectedDomain?.key}
           values={attributes}
@@ -377,41 +332,6 @@ export default function AddPage() {
           </div>
         </div>
 
-        {/* Pack size (optional) — what one unit contains */}
-        <div className="card p-4">
-          <label className="label">Each unit contains (optional)</label>
-          <div className="flex items-center gap-2">
-            <input
-              className="input w-24"
-              type="number"
-              min="0"
-              step="any"
-              value={packSize}
-              onChange={(e) => setPackSize(e.target.value)}
-              placeholder="50"
-              inputMode="decimal"
-            />
-            <select
-              className="input w-24"
-              value={packSizeUnit}
-              onChange={(e) => setPackSizeUnit(e.target.value)}
-            >
-              {PACK_UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-text-muted">
-              {packSize && Number(packSize) > 0
-                ? `${quantity || 0} × ${packSize} ${packSizeUnit} = ${
-                    Math.round(Number(quantity || 0) * Number(packSize) * 100) / 100
-                  } ${packSizeUnit} total`
-                : "e.g. 4 packets of 50 g each → Quantity 4, pack size 50 g"}
-            </p>
-          </div>
-        </div>
-
         {/* Dates & location */}
         <div className="card grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
           <div>
@@ -454,7 +374,7 @@ export default function AddPage() {
 
         <div className="flex flex-wrap gap-3">
           <button type="submit" className="btn-primary" disabled={addStock.isPending}>
-            {addStock.isPending ? "Saving…" : "Save & view inventory"}
+            {addStock.isPending ? "Saving…" : "Save"}
           </button>
           <button
             type="button"

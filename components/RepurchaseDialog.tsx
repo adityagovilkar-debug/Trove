@@ -9,7 +9,6 @@ import type { InventoryDetail, ShoppingItem } from "@/lib/types";
 import { LocationPicker } from "./LocationPicker";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
-const PACK_UNITS = ["g", "kg", "ml", "L", "pcs", "oz", "lb"];
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Everything needed to log a fresh purchase of something you already track.
@@ -100,8 +99,8 @@ export function RepurchaseDialog({
 
   const [quantity, setQuantity] = useState(seed.defaultQty ?? "1");
   const [unit, setUnit] = useState(seed.unit ?? "pcs");
-  const [packSize, setPackSize] = useState(seed.packSize != null ? String(seed.packSize) : "");
-  const [packSizeUnit, setPackSizeUnit] = useState(seed.packSizeUnit ?? "g");
+  const [packSize] = useState(seed.packSize != null ? String(seed.packSize) : "");
+  const [packSizeUnit] = useState(seed.packSizeUnit ?? "g");
   const [price, setPrice] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(today());
   const [expiryDate, setExpiryDate] = useState("");
@@ -182,23 +181,6 @@ export function RepurchaseDialog({
                   <option key={s.id} value={s.name} />
                 ))}
               </datalist>
-            </div>
-          </div>
-
-          <div className="rounded-xl border p-3">
-            <label className="label">Each unit contains (optional)</label>
-            <div className="flex items-center gap-2">
-              <input className="input w-24" type="number" min="0" step="any" value={packSize} onChange={(e) => setPackSize(e.target.value)} placeholder="50" inputMode="decimal" />
-              <select className="input w-24" value={packSizeUnit} onChange={(e) => setPackSizeUnit(e.target.value)}>
-                {PACK_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-text-muted">
-                {packSize && Number(packSize) > 0 ? `${quantity || 0} × ${packSize} ${packSizeUnit}` : "size per unit"}
-              </p>
             </div>
           </div>
 

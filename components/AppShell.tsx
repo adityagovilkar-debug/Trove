@@ -1,79 +1,42 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Boxes,
+  Package,
   PlusCircle,
-  LineChart,
   Settings,
   LogOut,
-  CreditCard,
   CalendarClock,
   Command,
   ShoppingCart,
-  ChefHat,
   Hammer,
-  Lightbulb,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
-import { SpaceProvider, useSpace } from "@/lib/space";
 import { ThemeToggle } from "./ThemeToggle";
 import { TroveMark } from "./TroveMark";
-import { HouseholdSwitcher } from "./HouseholdSwitcher";
-import { SpaceToggle } from "./SpaceToggle";
 import { CheckHaveSearch } from "./CheckHaveSearch";
 import { CommandPalette } from "./CommandPalette";
 import { SyncStatus } from "./SyncStatus";
 
-// Each space is "its own app": a distinct nav set and dashboard. Search (⌘K +
-// the header bar) and Settings stay global.
-const KITCHEN_NAV = [
+// One app, one menu (the Kitchen/Home split was retired in the 2026-11
+// rework). Pantry = food, Things = everything kept; phase 2 merges them.
+const NAV = [
   { href: "/", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
   { href: "/upcoming", label: "Upcoming", short: "Soon", icon: CalendarClock, mobile: true },
-  { href: "/inventory", label: "Pantry", short: "Stock", icon: Boxes, mobile: true },
-  { href: "/recipes", label: "Recipes", short: "Cook", icon: ChefHat, mobile: true },
+  { href: "/inventory", label: "Pantry", short: "Pantry", icon: Boxes, mobile: true },
+  { href: "/things", label: "Things", short: "Things", icon: Package, mobile: true },
   { href: "/shopping", label: "Shopping", short: "List", icon: ShoppingCart, mobile: true },
-  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: false },
-  { href: "/trends", label: "Trends", short: "Trends", icon: LineChart, mobile: false },
+  { href: "/fixit", label: "Fix-it", short: "Fix-it", icon: Hammer, mobile: false },
+  { href: "/add", label: "Add", short: "Add", icon: PlusCircle, mobile: false },
   { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },
 ];
+const MOBILE_NAV = NAV.filter((n) => n.mobile);
 
-const HOME_NAV = [
-  { href: "/home", label: "Dashboard", short: "Home", icon: LayoutDashboard, exact: true, mobile: true },
-  { href: "/things", label: "Things", short: "Things", icon: Boxes, mobile: true },
-  { href: "/fixit", label: "Fix-it", short: "Fix-it", icon: Hammer, mobile: true },
-  { href: "/plans", label: "Plans", short: "Plans", icon: Lightbulb, mobile: true },
-  { href: "/subscriptions", label: "Subscriptions", short: "Subs", icon: CreditCard, mobile: true },
-  { href: "/add", label: "Add Stock", short: "Add", icon: PlusCircle, mobile: false },
-  { href: "/settings", label: "Settings", short: "Settings", icon: Settings, mobile: false },
-];
-
-const SHARED = new Set(["/add", "/settings"]);
-function routeSpace(pathname: string): "kitchen" | "home" | null {
-  const match = (nav: typeof KITCHEN_NAV) =>
-    nav.some((n) => !SHARED.has(n.href) && (n.exact ? pathname === n.href : pathname.startsWith(n.href) && n.href !== "/"));
-  if (match(HOME_NAV)) return "home";
-  if (match(KITCHEN_NAV)) return "kitchen";
-  return null;
-}
-
-export function AppShell(props: {
-  email: string;
-  name: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <SpaceProvider>
-      <AppShellInner {...props} />
-    </SpaceProvider>
-  );
-}
-
-function AppShellInner({
+export function AppShell({
   email,
   name,
   children,
@@ -84,16 +47,6 @@ function AppShellInner({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { space, setSpace } = useSpace();
-  const NAV = space === "kitchen" ? KITCHEN_NAV : HOME_NAV;
-
-  // A route that belongs to only one space pulls the shell into that space,
-  // so deep links, the back button and ⌘K jumps always show the right nav.
-  useEffect(() => {
-    const owner = routeSpace(pathname);
-    if (owner && owner !== space) setSpace(owner);
-  }, [pathname, space, setSpace]);
-  const MOBILE_NAV = NAV.filter((n) => n.mobile);
 
   function isActive(href: string, exact?: boolean) {
     return exact ? pathname === href : pathname.startsWith(href) && href !== "/";
@@ -114,9 +67,7 @@ function AppShellInner({
           <span className="wordmark text-lg font-semibold tracking-tight">Trove</span>
         </div>
 
-        <div className="mb-4 px-2">
-          <SpaceToggle />
-        </div>
+        <div className="mb-4" />
 
         <nav className="flex flex-1 flex-col gap-0.5">
           {NAV.map(({ href, label, icon: Icon, exact }) => {
@@ -141,9 +92,6 @@ function AppShellInner({
         </nav>
 
         <div className="mt-4 border-t pt-4">
-          <div className="mb-2 px-2">
-            <HouseholdSwitcher />
-          </div>
           <div className="mb-2 flex items-center justify-between px-2">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{name}</p>
@@ -167,7 +115,6 @@ function AppShellInner({
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-bg/80 px-4 py-3 backdrop-blur md:px-8">
           <div className="flex items-center gap-2 md:hidden">
             <TroveMark className="h-8 w-8 rounded-lg" />
-            <SpaceToggle compact />
           </div>
           <div className="flex-1">
             <CheckHaveSearch />

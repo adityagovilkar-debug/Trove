@@ -2,15 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  ScanText,
-  Search,
-  ArrowRight,
-  Minus,
-  ChefHat,
-  ShoppingCart,
-  Plus,
-} from "lucide-react";
+import { ScanText, Search, ArrowRight, Minus, ShoppingCart, Plus, Hammer } from "lucide-react";
 import { toast } from "sonner";
 import {
   useInventory,
@@ -18,15 +10,14 @@ import {
   useShoppingList,
   useAddShoppingItems,
   useConsume,
-  useMealPlans,
+  useHomeTasks,
 } from "@/lib/queries";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { buildUpcoming } from "@/lib/upcoming";
 import { computeRestock, type RestockSuggestion } from "@/lib/restock";
 import { groupIntoProducts } from "@/lib/products";
-import { rowSpace } from "@/lib/space";
-import { cn, formatMoney } from "@/lib/utils";
-import { DotRing, Section, Led } from "@/components/instrument";
+import { cn } from "@/lib/utils";
+import { Section, Led } from "@/components/instrument";
 
 function greeting() {
   const h = new Date().getHours();
@@ -44,19 +35,16 @@ function dueTone(d: number): "bad" | "watch" | "ink" {
   return "ink";
 }
 
-// The Kitchen dashboard — the churny half of the house: food stock, expiries,
-// what to buy, what you can cook. Durables and payments live in Home.
+// Interim whole-house overview (rework phase 1). Phase 2 replaces this with
+// the search-first Home from docs/mockups/rework.html.
 export default function DashboardPage() {
-  const { data: allActive = [], isLoading: la } = useInventory({ status: "active" });
-  const { data: allHistory = [], isLoading: lh } = useTrendsData();
-  const { data: meals = [] } = useMealPlans();
+  const { data: active = [], isLoading: la } = useInventory({ status: "active" });
+  const { data: history = [], isLoading: lh } = useTrendsData();
   const { data: shopping = [] } = useShoppingList();
+  const { data: tasks = [] } = useHomeTasks();
   const addShopping = useAddShoppingItems();
   const consume = useConsume();
   const [firstName, setFirstName] = useState("");
-
-  const active = useMemo(() => allActive.filter((r) => rowSpace(r) === "kitchen"), [allActive]);
-  const history = useMemo(() => allHistory.filter((r) => rowSpace(r) === "kitchen"), [allHistory]);
 
   useEffect(() => {
     supabaseBrowser()
@@ -67,34 +55,18 @@ export default function DashboardPage() {
       });
   }, []);
 
-  const month = new Date().toISOString().slice(0, 7);
-  const monthLabel = new Date().toLocaleDateString(undefined, { month: "short" }).toUpperCase();
-
   const stats = useMemo(() => {
     const expiring = active.filter(
       (r) => r.days_to_expiry != null && r.days_to_expiry >= 0 && r.days_to_expiry <= 7,
     ).length;
     const expired = active.filter((r) => r.days_to_expiry != null && r.days_to_expiry < 0).length;
-    const spentThisMonth = history
-      .filter((r) => r.purchase_date.startsWith(month))
-      .reduce((s, r) => s + Number(r.price ?? 0), 0);
     const toBuy = shopping.filter((s) => !s.is_bought).length;
-    let used = 0,
-      wasted = 0;
-    for (const r of history) {
-      if (r.status === "finished") used++;
-      else if (r.status === "expired" || r.status === "discarded") wasted++;
-    }
-    const usedPct = used + wasted > 0 ? Math.round((used / (used + wasted)) * 100) : null;
-    return { expiring, expired, spentThisMonth, toBuy, usedPct };
-  }, [active, history, shopping, month]);
+    const openFixes = tasks.filter((t) => !t.is_done).length;
+    return { expiring, expired, toBuy, openFixes };
+  }, [active, shopping, tasks]);
 
-  const currency = active[0]?.currency ?? "INR";
-  const upcoming = useMemo(
-    () => buildUpcoming(active, [], meals).filter((e) => e.kind !== "warranty").slice(0, 5),
-    [active, meals],
-  );
-  const groceryCount = useMemo(() => groupIntoProducts(active).length, [active]);
+  const upcoming = useMemo(() => buildUpcoming(active).slice(0, 6), [active]);
+  const productCount = useMemo(() => groupIntoProducts(active).length, [active]);
 
   const pendingNames = useMemo(
     () => new Set(shopping.filter((s) => !s.is_bought).map((s) => s.name.toLowerCase())),
@@ -129,34 +101,26 @@ export default function DashboardPage() {
     <div className="pn6 mx-auto max-w-5xl space-y-5">
       {/* Hero */}
       <section className="card rise p-0">
-        <div className="flex items-start justify-between gap-4 p-5">
-          <div className="min-w-0">
-            <div className="no">KITCHEN</div>
-            <h1 className="title mt-1.5 truncate">
-              {greeting()}
-              {firstName ? `, ${firstName}` : ""}
-            </h1>
-            <p className="mt-1.5 text-sm text-ink-3">The pantry at a glance.</p>
-          </div>
-          <div className="flex shrink-0 flex-col items-center gap-1">
-            <DotRing frac={(stats.usedPct ?? 0) / 100} size={74} n={40} color="var(--pen)" label="Used before waste">
-              <span className="mono text-base font-semibold">
-                {stats.usedPct ?? "—"}
-                {stats.usedPct != null && <span className="u">%</span>}
-              </span>
-            </DotRing>
-            <span className="text-[8.5px] uppercase tracking-[0.14em] text-ink-3">Used · no waste</span>
-          </div>
+        <div className="p-5">
+          <div className="no">TROVE</div>
+          <h1 className="title mt-1.5 truncate">
+            {greeting()}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p className="mt-1.5 text-sm text-ink-3">Everything in the house, and where it is.</p>
         </div>
-        <div className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4" data-loading={isLoading || undefined}>
-          <Readout k="Groceries" v={String(groceryCount)} to="/inventory" />
+        <div
+          className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4"
+          data-loading={isLoading || undefined}
+        >
+          <Readout k="In stock" v={String(productCount)} to="/inventory" />
           <Readout
             k="Expiring ≤7d"
             v={String(stats.expiring)}
             tone={stats.expiring ? "var(--watch)" : undefined}
             to="/upcoming"
           />
-          <Readout k={`Spent · ${monthLabel}`} v={formatMoney(stats.spentThisMonth, currency)} to="/trends" />
+          <Readout k="Open fix-its" v={String(stats.openFixes)} to="/fixit" />
           <Readout k="To buy" v={String(stats.toBuy)} to="/shopping" />
         </div>
       </section>
@@ -187,8 +151,11 @@ export default function DashboardPage() {
             ) : (
               <ul>
                 {upcoming.map((ev) => (
-                  <li key={ev.id} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
-                    <Led tone={ev.kind === "meal" ? "good" : dueTone(ev.days)} />
+                  <li
+                    key={ev.id}
+                    className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0"
+                  >
+                    <Led tone={dueTone(ev.days)} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{ev.title}</p>
                       <p className="truncate text-xs text-ink-3">{ev.subtitle}</p>
@@ -196,11 +163,11 @@ export default function DashboardPage() {
                     <span className={cn("mono shrink-0 text-xs", toneClass(dueTone(ev.days)))}>
                       {dueLabel(ev.days)}
                     </span>
-                    {ev.kind === "expiry" && ev.inventory && (
+                    {ev.kind === "expiry" && (
                       <button
                         onClick={() =>
                           consume.mutate(
-                            { id: ev.inventory!.id, quantity: Number(ev.inventory!.quantity) },
+                            { id: ev.inventory.id, quantity: Number(ev.inventory.quantity) },
                             { onSuccess: () => toast.success(`Used 1 ${ev.title}`) },
                           )
                         }
@@ -236,11 +203,14 @@ export default function DashboardPage() {
             {isLoading ? (
               <Skeleton />
             ) : restock.length === 0 ? (
-              <Empty text="Well stocked — nothing predicted to run out." />
+              <Empty text="Nothing looks like it is running out." />
             ) : (
               <ul>
                 {restock.map((r) => (
-                  <li key={r.key} className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0">
+                  <li
+                    key={r.key}
+                    className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0"
+                  >
                     <Led tone={r.reason === "out" ? "bad" : r.reason === "due" ? "watch" : "ink"} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{r.name}</p>
@@ -266,7 +236,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <QuickAction href="/add" icon={ScanText} label="Add / scan" />
         <QuickAction href="/shopping" icon={ShoppingCart} label="Shopping" />
-        <QuickAction href="/recipes" icon={ChefHat} label="Recipes" />
+        <QuickAction href="/fixit" icon={Hammer} label="Fix-it" />
         <button
           onClick={() => window.dispatchEvent(new Event("trove:command"))}
           className="card flex items-center justify-center gap-2 p-3 text-xs font-semibold uppercase tracking-[0.08em] hover:bg-surface-2"
@@ -279,17 +249,7 @@ export default function DashboardPage() {
   );
 }
 
-function Readout({
-  k,
-  v,
-  tone,
-  to,
-}: {
-  k: string;
-  v: string;
-  tone?: string;
-  to?: string;
-}) {
+function Readout({ k, v, tone, to }: { k: string; v: string; tone?: string; to?: string }) {
   const body = (
     <>
       <span className="k">{k}</span>

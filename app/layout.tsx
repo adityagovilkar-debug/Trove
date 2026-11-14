@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Trove — Home Inventory",
   description:
-    "Track everything you own — groceries, electronics, books — what's expiring, and what you need to rebuy.",
+    "Everything in the house and where it is — food, supplies and the things you keep.",
   applicationName: "Trove",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Trove" },
   // Favicon + apple-touch icon are provided by app/icon.png and

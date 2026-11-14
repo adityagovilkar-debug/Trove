@@ -2,19 +2,27 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
-// Daily digest job (triggered by Vercel Cron — see vercel.json). Computes, per
-// household, what's expiring soon and which payments are due, then delivers it
-// two ways: web-push to every subscribed device, and — when Resend is
-// configured (RESEND_API_KEY + RESEND_FROM) — an email to each member.
+// Daily reminder job (triggered by Vercel Cron — see vercel.json). Push only:
+// food expiring within two days, and warranties reaching a milestone
+// (30 / 7 / 1 / 0 days left — a nudge, not a daily nag). The email digest and
+// payment reminders were retired in the 2026-11 rework (payments → Kosha).
 // Protected by CRON_SECRET.
 export const runtime = "nodejs";
 
 const EXPIRY_WINDOW = 2; // days ahead
-const PAYMENT_WINDOW = 2; // days ahead
+const WARRANTY_MILESTONES = new Set([30, 7, 1, 0]);
 
 interface Digest {
   expNames: string[];
-  payNames: string[];
+  warNames: string[];
+}
+
+function daysUntil(date: string): number | null {
+  const [y, m, d] = date.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const now = new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.round((Date.UTC(y, m - 1, d) - today) / 86_400_000);
 }
 
 export async function GET(request: Request) {
@@ -32,7 +40,7 @@ export async function GET(request: Request) {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
 
   // Expiries: within the window, but not stale (expired more than a day ago —
-  // those keep nagging otherwise and belong in the in-app view, not a daily push).
+  // those belong in the in-app view, not a daily push).
   const { data: expiring } = await supabase
     .from("inventory_detail")
     .select("household_id, item_name, days_to_expiry")
@@ -41,43 +49,49 @@ export async function GET(request: Request) {
     .gte("days_to_expiry", -1)
     .lte("days_to_expiry", EXPIRY_WINDOW);
 
-  const { data: payments } = await supabase
-    .from("subscriptions")
-    .select("household_id, name, next_payment")
+  // Warranties live in item attributes.
+  const { data: withWarranty } = await supabase
+    .from("inventory_detail")
+    .select("household_id, item_name, item_attributes")
     .eq("status", "active")
-    .not("next_payment", "is", null);
+    .not("item_attributes->>warranty_until", "is", null);
 
-  // Build a per-household digest.
   const digests = new Map<string, Digest>();
   const get = (hh: string) => {
     let d = digests.get(hh);
-    if (!d) digests.set(hh, (d = { expNames: [], payNames: [] }));
+    if (!d) digests.set(hh, (d = { expNames: [], warNames: [] }));
     return d;
   };
   for (const e of expiring ?? []) {
     if (e.household_id) get(e.household_id).expNames.push(e.item_name);
   }
-  for (const p of payments ?? []) {
-    const days = Math.ceil(
-      (new Date(p.next_payment + "T00:00:00").getTime() - Date.now()) / 86_400_000,
-    );
-    if (p.household_id && days >= 0 && days <= PAYMENT_WINDOW)
-      get(p.household_id).payNames.push(p.name);
+  for (const w of withWarranty ?? []) {
+    const until = (w.item_attributes as Record<string, unknown> | null)?.warranty_until;
+    if (!w.household_id || typeof until !== "string" || !until) continue;
+    const d = daysUntil(until);
+    if (d != null && WARRANTY_MILESTONES.has(d)) get(w.household_id).warNames.push(w.item_name);
   }
 
   function bodyFor(hh: string | null): string | null {
     if (!hh) return null;
     const d = digests.get(hh);
-    if (!d || (d.expNames.length === 0 && d.payNames.length === 0)) return null;
+    if (!d || (d.expNames.length === 0 && d.warNames.length === 0)) return null;
     const parts: string[] = [];
     if (d.expNames.length)
-      parts.push(`${d.expNames.length} item${d.expNames.length > 1 ? "s" : ""} expiring soon`);
-    if (d.payNames.length)
-      parts.push(`${d.payNames.length} payment${d.payNames.length > 1 ? "s" : ""} due`);
+      parts.push(
+        d.expNames.length === 1
+          ? `${d.expNames[0]} is expiring`
+          : `${d.expNames.length} things expiring soon`,
+      );
+    if (d.warNames.length)
+      parts.push(
+        d.warNames.length === 1
+          ? `${d.warNames[0]}: warranty ending`
+          : `${d.warNames.length} warranties ending`,
+      );
     return parts.join(" · ");
   }
 
-  // ---- Web push -----------------------------------------------------------
   const { data: subs } = await supabase.from("push_subscriptions").select("*");
   let pushed = 0;
   for (const s of subs ?? []) {
@@ -96,68 +110,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // ---- Email (optional, via Resend) --------------------------------------
-  const resendKey = process.env.RESEND_API_KEY;
-  const resendFrom = process.env.RESEND_FROM;
-  let emailed = 0;
-  if (resendKey && resendFrom) {
-    const { data: members } = await supabase
-      .from("household_members")
-      .select("household_id, profiles(email)");
-    for (const m of members ?? []) {
-      const body = bodyFor(m.household_id);
-      if (!body) continue;
-      const prof = m.profiles as unknown;
-      const email = Array.isArray(prof)
-        ? (prof[0]?.email as string | undefined)
-        : ((prof as { email?: string } | null)?.email);
-      if (!email) continue;
-      const d = digests.get(m.household_id)!;
-      try {
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: resendFrom,
-            to: [email],
-            subject: `Trove — ${body}`,
-            html: emailHtml(d),
-          }),
-        });
-        if (res.ok) emailed++;
-      } catch {
-        // best-effort; don't fail the whole job on one email
-      }
-    }
-  }
-
-  return NextResponse.json({ pushed, emailed });
-}
-
-function emailHtml(d: Digest): string {
-  const list = (title: string, names: string[]) =>
-    names.length
-      ? `<p style="margin:16px 0 4px;font-weight:600;color:#2e241b">${title}</p>
-         <ul style="margin:0;padding-left:18px;color:#5f5a52">
-           ${names.slice(0, 12).map((n) => `<li>${escapeHtml(n)}</li>`).join("")}
-           ${names.length > 12 ? `<li>…and ${names.length - 12} more</li>` : ""}
-         </ul>`
-      : "";
-  return `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:8px">
-    <h2 style="color:#c2410c;margin:0 0 8px">Trove daily digest</h2>
-    ${list("Expiring soon", d.expNames)}
-    ${list("Payments due", d.payNames)}
-    <p style="margin-top:20px">
-      <a href="https://trove.vercel.app/upcoming" style="color:#c2410c">Open Trove →</a>
-    </p>
-  </div>`;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
+  return NextResponse.json({ pushed });
 }

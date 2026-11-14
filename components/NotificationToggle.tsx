@@ -92,7 +92,7 @@ export function NotificationToggle() {
         <p className="text-sm font-medium">Daily reminders</p>
         <p className="text-xs text-text-muted">
           {supported
-            ? "A push when items are expiring or a payment is due."
+            ? "A push when food is about to expire or a warranty is ending."
             : "Push notifications aren't supported on this browser."}
         </p>
       </div>

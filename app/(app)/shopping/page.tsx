@@ -22,7 +22,7 @@ import type { ShoppingItem } from "@/lib/types";
 const SOURCE_LABEL: Record<string, string> = {
   restock: "predicted",
   finished: "ran out",
-  recipe: "for a recipe",
+  recipe: "", // legacy rows from the retired recipes feature
   manual: "",
 };
 

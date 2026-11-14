@@ -89,26 +89,3 @@ export async function searchProducts(
     return [];
   }
 }
-
-export interface BookInfo {
-  title: string;
-  author: string | null;
-}
-
-// Look up a book by ISBN via Open Library (free, no key) for the Book domain.
-export async function lookupBook(isbn: string): Promise<BookInfo | null> {
-  try {
-    const res = await fetch(
-      `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(
-        isbn,
-      )}&format=json&jscmd=data`,
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const b = data[`ISBN:${isbn}`];
-    if (!b?.title) return null;
-    return { title: b.title, author: b.authors?.[0]?.name ?? null };
-  } catch {
-    return null;
-  }
-}

@@ -175,3 +175,23 @@ before any build.
 
 Each phase leaves the app usable and is pushed on its own. Phase 1 alone
 removes most of the clutter.
+
+## 9. Progress
+
+- **Phase 0 — done 2026-11-14.** Decisions recorded; subscriptions and
+  recipes exported to `exports/` (gitignored); mockups in
+  `docs/mockups/rework.html`. You confirmed the subscriptions are in Kosha.
+- **Phase 1 — done 2026-11-14.** Removed: Subscriptions, Recipes and meal
+  plans, Plans, Trends, receipt scanning, label scanning and the on-device AI
+  model, nutrition fields, books (fields, ISBN lookup, shelf classification),
+  use-by-amount, the pack-size inputs (stored values are kept), the
+  Kitchen/Home switch and the second dashboard, the email digest and payment
+  reminders. Book, Plants and Luggage are hidden from pickers. One menu;
+  the household switcher lives in Settings. Push reminders now cover food
+  expiring and warranties ending. No database rows or tables were removed.
+
+**Correction (2026-11-14):** the "duplicate places" noted during phase 0 were
+not duplicates. They belong to a second, empty household that Neha's account
+created on 8 July; the read-only check had looked across all households.
+Aditya's household ("My Home", 19 places) has none. Neha is also a member of
+Aditya's household.

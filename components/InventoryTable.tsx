@@ -37,7 +37,6 @@ import {
 } from "@/lib/utils";
 import { EditStockDialog } from "./EditStockDialog";
 import { AddPurchaseDialog } from "./AddPurchaseDialog";
-import { ConsumeAmountDialog } from "./ConsumeAmountDialog";
 import { SwipeRow } from "./SwipeRow";
 
 type SortKey = "name" | "totalQty" | "nearestExpiryDays" | "totalValue" | "lastPurchase";
@@ -71,7 +70,6 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
   });
   const [editLot, setEditLot] = useState<InventoryDetail | null>(null);
   const [purchaseFor, setPurchaseFor] = useState<ProductGroup | null>(null);
-  const [amountLot, setAmountLot] = useState<InventoryDetail | null>(null);
 
   const sorted = useMemo(() => {
     const arr = [...products];
@@ -132,17 +130,6 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
       {purchaseFor && (
         <AddPurchaseDialog product={purchaseFor} onClose={() => setPurchaseFor(null)} />
       )}
-      {amountLot && (
-        <ConsumeAmountDialog
-          lot={{
-            id: amountLot.id,
-            name: amountLot.item_name,
-            quantity: Number(amountLot.quantity),
-            unit: amountLot.unit,
-          }}
-          onClose={() => setAmountLot(null)}
-        />
-      )}
 
       {/* Grouping toggle — only when something actually blends brands. */}
       {hasBrandBlend && (
@@ -176,7 +163,6 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
             onUseOne={() => useOne(g)}
             onBuyAgain={() => setPurchaseFor(g)}
             onEditLot={setEditLot}
-            onUseAmount={setAmountLot}
           />
         ))}
       </div>
@@ -254,13 +240,6 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                           <Minus className="h-4 w-4" />
                           <span className="hidden sm:inline">Use 1</span>
                         </button>
-                        <button
-                          onClick={() => setAmountLot(lotToConsume(g) ?? null)}
-                          className="btn-ghost px-2 py-1.5 text-xs"
-                          title="Use a specific amount"
-                        >
-                          Use…
-                        </button>
                         <button onClick={() => setPurchaseFor(g)} className="btn-ghost px-2 py-1.5" title="Add another purchase">
                           <Plus className="h-4 w-4" />
                         </button>
@@ -274,7 +253,6 @@ export function InventoryTable({ rows }: { rows: InventoryDetail[] }) {
                         key={lot.id}
                         lot={lot}
                         onEdit={() => setEditLot(lot)}
-                        onUseAmount={() => setAmountLot(lot)}
                       />
                     ))}
                 </FragmentRows>
@@ -302,11 +280,9 @@ function Th({ label, onClick, active }: { label: string; onClick: () => void; ac
 function LotRow({
   lot,
   onEdit,
-  onUseAmount,
 }: {
   lot: InventoryDetail;
   onEdit: () => void;
-  onUseAmount: () => void;
 }) {
   const consume = useConsume();
   const setStatus = useSetStatus();
@@ -353,9 +329,6 @@ function LotRow({
           >
             <Minus className="h-3.5 w-3.5" />
           </button>
-          <button onClick={onUseAmount} className="rounded-lg px-1.5 py-1 text-[11px] hover:bg-surface-2" title="Use a specific amount">
-            Use…
-          </button>
           <button onClick={onEdit} className="rounded-lg p-1.5 hover:bg-surface-2" title="Edit this purchase">
             <Pencil className="h-3.5 w-3.5" />
           </button>
@@ -391,13 +364,11 @@ function ProductCardMobile({
   onUseOne,
   onBuyAgain,
   onEditLot,
-  onUseAmount,
 }: {
   product: ProductGroup;
   onUseOne: () => void;
   onBuyAgain: () => void;
   onEditLot: (lot: InventoryDetail) => void;
-  onUseAmount: (lot: InventoryDetail) => void;
 }) {
   const [open, setOpen] = useState(false);
   const locPaths = useLocationPaths();
@@ -461,7 +432,6 @@ function ProductCardMobile({
                 key={lot.id}
                 lot={lot}
                 onEdit={() => onEditLot(lot)}
-                onUseAmount={() => onUseAmount(lot)}
               />
             ))}
           </div>
@@ -474,11 +444,9 @@ function ProductCardMobile({
 function MobileLotRow({
   lot,
   onEdit,
-  onUseAmount,
 }: {
   lot: InventoryDetail;
   onEdit: () => void;
-  onUseAmount: () => void;
 }) {
   const consume = useConsume();
   const setStatus = useSetStatus();
@@ -498,9 +466,6 @@ function MobileLotRow({
       </div>
       <button onClick={() => consume.mutate({ id: lot.id, quantity: Number(lot.quantity) })} className="rounded-lg p-1.5 hover:bg-surface-2" title="Use one">
         <Minus className="h-3.5 w-3.5" />
-      </button>
-      <button onClick={onUseAmount} className="rounded-lg px-1.5 py-1 text-[11px] hover:bg-surface-2" title="Use a specific amount">
-        Use…
       </button>
       <button onClick={onEdit} className="rounded-lg p-1.5 hover:bg-surface-2" title="Edit">
         <Pencil className="h-3.5 w-3.5" />
