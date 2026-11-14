@@ -134,11 +134,11 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-24 pt-6 md:px-8 md:pb-10">{children}</main>
+        <main className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-10">{children}</main>
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-surface md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
         {MOBILE_NAV.map(({ href, short, icon: Icon, exact }) => (
           <Link
             key={href}

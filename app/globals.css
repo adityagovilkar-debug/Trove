@@ -140,6 +140,16 @@
   }
 }
 
+/* A phone page must never scroll sideways: that is what made the fixed
+   bottom bar slide off-screen. Real overflow is fixed at its source; this is
+   the safety net. `clip` (unlike `hidden`) keeps position: sticky working. */
+@layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
 body {
   background-color: var(--paper);
   /* Faint engineering dot-grid on the page — the drafting-paper layer.

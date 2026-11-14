@@ -141,7 +141,7 @@ export default function DashboardPage() {
 
       {/* Two columns */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="card rise i2 p-4">
+        <section className="card rise i2 min-w-0 p-4">
           <Section label="Upcoming" right={<ViewAll href="/upcoming" />} />
           <div className="mt-3">
             {isLoading ? (
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   >
                     <Led tone={dueTone(ev.days)} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{ev.title}</p>
+                      <p className="line-clamp-2 break-words text-sm font-medium">{ev.title}</p>
                       <p className="truncate text-xs text-ink-3">{ev.subtitle}</p>
                     </div>
                     <span className={cn("mono shrink-0 text-xs", toneClass(dueTone(ev.days)))}>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="card rise i3 p-4">
+        <section className="card rise i3 min-w-0 p-4">
           <Section
             label="Running low"
             right={
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                   >
                     <Led tone={r.reason === "out" ? "bad" : r.reason === "due" ? "watch" : "ink"} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{r.name}</p>
+                      <p className="line-clamp-2 break-words text-sm font-medium">{r.name}</p>
                       <p className="truncate text-xs text-ink-3">{r.detail}</p>
                     </div>
                     <button
