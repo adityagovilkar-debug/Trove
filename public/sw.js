@@ -1,15 +1,14 @@
 // Minimal service worker for PWA installability + a basic offline shell.
 // We use a network-first strategy so data stays fresh, falling back to cache
 // when offline.
-const CACHE = "trove-v3";
+const CACHE = "trove-v4";
 const APP_SHELL = [
   "/",
-  "/inventory",
-  "/things",
+  "/stuff",
+  "/places",
+  "/shopping",
   "/add",
   "/upcoming",
-  "/shopping",
-  "/fixit",
   "/settings",
   "/manifest.webmanifest",
 ];

@@ -11,7 +11,6 @@ import {
   RotateCcw,
   MapPin,
   ShoppingCart,
-  Store as StoreIcon,
 } from "lucide-react";
 import type { InventoryDetail } from "@/lib/types";
 import {
@@ -30,11 +29,10 @@ import {
   expiryBucket,
   expiryLabel,
   formatDate,
-  formatMoney,
 } from "@/lib/utils";
 import { toast } from "sonner";
 
-export function StockCard({ row }: { row: InventoryDetail }) {
+export function StockCard({ row, hidePlace = false }: { row: InventoryDetail; hidePlace?: boolean }) {
   const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [buying, setBuying] = useState(false);
@@ -73,114 +71,76 @@ export function StockCard({ row }: { row: InventoryDetail }) {
 
   return (
     <>
-    <div className="card flex items-center gap-3 p-3">
-      <div
-        className={cn(
-          "mono flex h-12 w-12 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold uppercase tracking-wider",
-          isActive ? "bg-surface-2 text-ink ring-1 ring-inset ring-border" : "bg-surface-2 text-text-muted",
-        )}
-      >
-        {row.item_image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={row.item_image_url} alt="" className="h-12 w-12 rounded-[3px] object-cover" />
-        ) : (
-          row.item_name.slice(0, 2)
-        )}
-      </div>
+    <div className="card p-3">
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            "mono flex h-10 w-10 shrink-0 items-center justify-center rounded-[3px] text-[11px] font-semibold uppercase tracking-wider",
+            isActive ? "bg-surface-2 text-ink ring-1 ring-inset ring-border" : "bg-surface-2 text-text-muted",
+          )}
+          aria-hidden="true"
+        >
+          {row.item_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={row.item_image_url} alt="" className="h-10 w-10 rounded-[3px] object-cover" />
+          ) : (
+            row.item_name.slice(0, 2)
+          )}
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className={cn("truncate font-medium", !isActive && "line-through text-text-muted")}>
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "line-clamp-2 break-words font-medium leading-snug",
+              !isActive && "line-through text-text-muted",
+            )}
+          >
             {row.item_name}
           </p>
-          {row.domain_name && (
-            <span className="chip bg-surface-2 text-text-muted ring-border">
-              {row.domain_name}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-text-muted">
+            <span className="mono font-medium text-ink">
+              {packLabel(row) ?? `${row.quantity}${row.unit ? ` ${row.unit}` : ""}`}
+              {packTotal(row) && (
+                <span className="ml-1 font-normal text-text-muted">({packTotal(row)})</span>
+              )}
             </span>
-          )}
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
-          <span className="mono font-medium text-ink">
-            {packLabel(row) ?? `${row.quantity}${row.unit ? ` ${row.unit}` : ""}`}
-            {packTotal(row) && (
-              <span className="ml-1 font-normal text-text-muted">({packTotal(row)})</span>
+            {row.item_brand && <span className="break-words">{row.item_brand}</span>}
+            {attrs.map((a) => (
+              <span key={a.label} className="break-words">
+                {a.value}
+              </span>
+            ))}
+            {!hidePlace && locationLabel && (
+              <span className="flex min-w-0 items-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="break-words">{locationLabel}</span>
+              </span>
             )}
-          </span>
-          {attrs.map((a) => (
-            <span key={a.label}>{a.value}</span>
-          ))}
-          {locationLabel && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {locationLabel}
-            </span>
-          )}
-          {row.store_name && (
-            <span className="flex items-center gap-1">
-              <StoreIcon className="h-3 w-3" />
-              {row.store_name}
-            </span>
-          )}
-          {row.price != null && <span className="mono">{formatMoney(row.price, row.currency)}</span>}
-          <span>Bought <span className="mono">{formatDate(row.purchase_date)}</span></span>
+            {!isActive && row.finished_at && (
+              <span>
+                {row.status === "finished" ? "Used up" : row.status === "expired" ? "Expired" : "Thrown out"}{" "}
+                <span className="mono">{formatDate(row.finished_at)}</span>
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      {row.expiry_date && (
-        <span className={cn("chip mono shrink-0 ring-inset", EXPIRY_STYLES[bucket])}>
-          {expiryLabel(row.days_to_expiry)}
-        </span>
-      )}
-
-      <div className="flex shrink-0 items-center gap-1">
-        {canUseOne && (
-          <button
-            onClick={useOne}
-            disabled={consume.isPending}
-            className="btn-outline px-2.5 py-1.5"
-            title="Use one (decrement quantity)"
-          >
-            <Minus className="h-4 w-4" />
-            <span className="hidden sm:inline">Use 1</span>
-          </button>
-        )}
-        {isActive && (
-          <button
-            onClick={finish}
-            disabled={setStatus.isPending}
-            className="btn-outline px-2.5 py-1.5"
-            title="Mark the whole entry finished"
-          >
-            <Check className="h-4 w-4" />
-            <span className="hidden sm:inline">{canUseOne ? "All done" : "Finished"}</span>
-          </button>
-        )}
-        {!isActive && (
-          <button
-            onClick={() => setBuying(true)}
-            className="btn-primary px-2.5 py-1.5"
-            title="Buy this again — adds a fresh entry to your stock"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="hidden sm:inline">Buy again</span>
-          </button>
-        )}
-        <div className="relative">
+        <div className="relative shrink-0">
           <button
             onClick={() => setMenu((m) => !m)}
             onBlur={() => setTimeout(() => setMenu(false), 150)}
-            className="btn-ghost px-2 py-1.5"
-            aria-label="More actions"
+            className="btn-ghost -mr-1 -mt-1 px-2 py-1.5"
+            aria-label={`More actions for ${row.item_name}`}
           >
             <MoreVertical className="h-4 w-4" />
           </button>
           {menu && (
-            <div className="absolute right-0 top-10 z-30 w-44 rounded-xl border bg-surface p-1 shadow-xl">
+            <div className="absolute right-0 top-9 z-30 w-44 rounded-xl border bg-surface p-1 shadow-xl">
               <MenuItem icon={Pencil} label="Edit" onClick={() => setEditing(true)} />
               {!isActive && (
                 <MenuItem
                   icon={RotateCcw}
-                  label="Reactivate"
+                  label="Back in stock"
                   onClick={() => setStatus.mutate({ id: row.id, status: "active" })}
                 />
               )}
@@ -191,16 +151,55 @@ export function StockCard({ row }: { row: InventoryDetail }) {
                   onClick={() => setStatus.mutate({ id: row.id, status: "expired" })}
                 />
               )}
-              <MenuItem
-                icon={Trash2}
-                label="Delete"
-                danger
-                onClick={() => del.mutate(row.id)}
-              />
+              <MenuItem icon={Trash2} label="Delete" danger onClick={() => del.mutate(row.id)} />
             </div>
           )}
         </div>
       </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 pl-[52px]">
+          {row.expiry_date && isActive ? (
+            <span className={cn("chip mono ring-inset", EXPIRY_STYLES[bucket])}>
+              {expiryLabel(row.days_to_expiry)}
+            </span>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-1.5">
+            {canUseOne && (
+              <button
+                onClick={useOne}
+                disabled={consume.isPending}
+                className="btn-outline px-2.5 py-1.5"
+                title="Use one"
+              >
+                <Minus className="h-4 w-4" />
+                Use 1
+              </button>
+            )}
+            {isActive && (
+              <button
+                onClick={finish}
+                disabled={setStatus.isPending}
+                className="btn-outline px-2.5 py-1.5"
+                title="Mark it used up"
+              >
+                <Check className="h-4 w-4" />
+                {canUseOne ? "All done" : "Done"}
+              </button>
+            )}
+            {!isActive && (
+              <button
+                onClick={() => setBuying(true)}
+                className="btn-outline px-2.5 py-1.5"
+                title="Buy this again — adds a fresh entry to your stock"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                Buy again
+              </button>
+            )}
+          </div>
+        </div>
     </div>
     {editing && <EditStockDialog row={row} onClose={() => setEditing(false)} />}
     {buying && (

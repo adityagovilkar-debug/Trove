@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useHouseholdId, useHouseholds, useRefData } from "@/lib/queries";
 import { NotificationToggle } from "@/components/NotificationToggle";
-import { LocationManager } from "@/components/LocationManager";
+import Link from "next/link";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
 import { HouseholdSwitcher } from "@/components/HouseholdSwitcher";
 
@@ -196,8 +196,16 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Locations (nested) */}
-      <LocationManager />
+      {/* Places moved to their own tab */}
+      <section className="card flex items-center justify-between gap-3 p-5">
+        <div className="min-w-0">
+          <h2 className="font-semibold">Places</h2>
+          <p className="text-sm text-text-muted">Rooms, cupboards and boxes are managed in the Places tab.</p>
+        </div>
+        <Link href="/places" className="btn-outline shrink-0">
+          Open
+        </Link>
+      </section>
 
       {/* Categories */}
       <EditableList

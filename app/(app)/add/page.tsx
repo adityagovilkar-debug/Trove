@@ -10,7 +10,6 @@ import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { AttributeFields } from "@/components/AttributeFields";
 import { ProductSearch } from "@/components/ProductSearch";
 import { LocationPicker } from "@/components/LocationPicker";
-import { domainSpace } from "@/lib/space";
 import { ScreenHead } from "@/components/instrument";
 
 const UNITS = ["pcs", "pack", "g", "kg", "ml", "L", "bottle", "can", "box", "dozen"];
@@ -147,7 +146,7 @@ export default function AddPage() {
         onSuccess: () => {
           toast.success(`Added “${name.trim()}”`);
           if (addAnother) reset();
-          else router.push(selectedDomain && domainSpace(selectedDomain) === "home" ? "/things" : "/inventory");
+          else router.push("/stuff");
         },
         onError: (err) =>
           toast.error(err instanceof Error ? err.message : "Failed to add"),

@@ -15,7 +15,6 @@ import {
   LogOut,
   MapPin,
   CornerDownLeft,
-  Hammer,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useStockSearch } from "@/lib/queries";
@@ -108,12 +107,12 @@ export function CommandPalette() {
 
   const actions: Action[] = useMemo(
     () => [
-      { id: "dash", label: "Dashboard", icon: LayoutDashboard, run: () => go("/") },
-      { id: "up", label: "Upcoming", icon: CalendarClock, run: () => go("/upcoming") },
-      { id: "inv", label: "Pantry", icon: Boxes, run: () => go("/inventory") },
-      { id: "things", label: "Things", icon: Package, run: () => go("/things") },
-      { id: "fixit", label: "Fix-it", icon: Hammer, run: () => go("/fixit") },
+      { id: "dash", label: "Home", icon: LayoutDashboard, run: () => go("/") },
+      { id: "stuff", label: "Stuff — everything", icon: Boxes, run: () => go("/stuff") },
+      { id: "food", label: "Stuff — food", icon: Package, run: () => go("/stuff?kind=food") },
+      { id: "places", label: "Places", icon: MapPin, run: () => go("/places") },
       { id: "shop", label: "Shopping list", icon: ShoppingCart, run: () => go("/shopping") },
+      { id: "up", label: "Timeline — expiries & warranties", icon: CalendarClock, run: () => go("/upcoming") },
       { id: "add", label: "Add something", icon: PlusCircle, run: () => go("/add") },
       { id: "settings", label: "Settings", icon: Settings, run: () => go("/settings") },
       { id: "theme", label: "Toggle light / dark", icon: SunMoon, run: toggleTheme },
@@ -158,7 +157,7 @@ export function CommandPalette() {
     if (it.type === "action") {
       recordRecent(it.action.id);
       it.action.run();
-    } else go("/inventory");
+    } else go("/stuff");
   }
 
   function onInputKey(e: React.KeyboardEvent) {

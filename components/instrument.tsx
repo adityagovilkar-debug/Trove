@@ -254,11 +254,13 @@ export function Section({
 }) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <h2 className="shrink-0 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-3">
+      {/* A long label (e.g. a deep place path) wraps instead of pushing the
+          count off a phone screen. */}
+      <h2 className="min-w-0 break-words text-[10.5px] font-semibold uppercase leading-snug tracking-[0.18em] text-ink-3">
         {label}
       </h2>
-      <span className="h-px flex-1 border-t border-dotted border-rule-strong" />
-      {right}
+      <span className="h-px min-w-4 flex-1 border-t border-dotted border-rule-strong" />
+      {right && <span className="shrink-0">{right}</span>}
     </div>
   );
 }

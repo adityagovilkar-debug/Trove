@@ -1,305 +1,289 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ScanText, Search, ArrowRight, Minus, ShoppingCart, Plus, Hammer } from "lucide-react";
+import { Check, Flag, Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useInventory,
-  useTrendsData,
+  useRefData,
   useShoppingList,
-  useAddShoppingItems,
   useConsume,
+  useSetStatus,
   useHomeTasks,
+  useAddHomeTask,
+  useToggleHomeTask,
+  useDeleteHomeTask,
+  useClearDoneTasks,
+  useLocationPaths,
 } from "@/lib/queries";
-import { supabaseBrowser } from "@/lib/supabase/browser";
-import { buildUpcoming } from "@/lib/upcoming";
-import { computeRestock, type RestockSuggestion } from "@/lib/restock";
+import { buildUpcoming, type UpcomingEvent } from "@/lib/upcoming";
 import { groupIntoProducts } from "@/lib/products";
-import { cn } from "@/lib/utils";
+import { CheckHaveSearch } from "@/components/CheckHaveSearch";
 import { Section, Led } from "@/components/instrument";
+import { cn } from "@/lib/utils";
+import { useHydrated } from "@/lib/useHydrated";
 
-function greeting() {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+// How far ahead "Needs a look" reaches.
+const FOOD_WINDOW = 7; // days
+const WARRANTY_WINDOW = 30; // days
+
+function dueText(ev: UpcomingEvent) {
+  const d = ev.days;
+  if (ev.kind === "warranty") {
+    if (d < 0) return `warranty ended ${Math.abs(d)}d ago`;
+    if (d === 0) return "warranty ends today";
+    return `warranty ends in ${d}d`;
+  }
+  if (d < 0) return `expired ${Math.abs(d)}d ago`;
+  if (d === 0) return "expires today";
+  if (d === 1) return "expires tomorrow";
+  return `expires in ${d}d`;
 }
-function dueLabel(d: number) {
-  if (d < 0) return `${Math.abs(d)}d ago`;
-  if (d === 0) return "today";
-  if (d === 1) return "tomorrow";
-  return `in ${d}d`;
-}
-function dueTone(d: number): "bad" | "watch" | "ink" {
+function tone(d: number): "bad" | "watch" | "ink" {
   if (d < 0) return "bad";
   if (d <= 3) return "watch";
   return "ink";
 }
 
-// Interim whole-house overview (rework phase 1). Phase 2 replaces this with
-// the search-first Home from docs/mockups/rework.html.
-export default function DashboardPage() {
-  const { data: active = [], isLoading: la } = useInventory({ status: "active" });
-  const { data: history = [], isLoading: lh } = useTrendsData();
+// Home is a finder, not a dashboard: one search box, then only what needs you.
+export default function HomePage() {
+  const hydrated = useHydrated();
+  const { data: active = [], isLoading: loadingStock } = useInventory({ status: "active" });
+  const isLoading = !hydrated || loadingStock;
+  const { data: ref } = useRefData();
   const { data: shopping = [] } = useShoppingList();
-  const { data: tasks = [] } = useHomeTasks();
-  const addShopping = useAddShoppingItems();
+  const locPaths = useLocationPaths();
   const consume = useConsume();
-  const [firstName, setFirstName] = useState("");
+  const setStatus = useSetStatus();
 
-  useEffect(() => {
-    supabaseBrowser()
-      .auth.getUser()
-      .then(({ data }) => {
-        const n = (data.user?.user_metadata?.full_name as string) ?? data.user?.email ?? "";
-        setFirstName(n.split(" ")[0].split("@")[0]);
-      });
-  }, []);
+  const thingCount = useMemo(() => groupIntoProducts(active).length, [active]);
+  const placeCount = ref?.locations.length ?? 0;
+  const toBuy = shopping.filter((s) => !s.is_bought).length;
 
-  const stats = useMemo(() => {
-    const expiring = active.filter(
-      (r) => r.days_to_expiry != null && r.days_to_expiry >= 0 && r.days_to_expiry <= 7,
-    ).length;
-    const expired = active.filter((r) => r.days_to_expiry != null && r.days_to_expiry < 0).length;
-    const toBuy = shopping.filter((s) => !s.is_bought).length;
-    const openFixes = tasks.filter((t) => !t.is_done).length;
-    return { expiring, expired, toBuy, openFixes };
-  }, [active, shopping, tasks]);
-
-  const upcoming = useMemo(() => buildUpcoming(active).slice(0, 6), [active]);
-  const productCount = useMemo(() => groupIntoProducts(active).length, [active]);
-
-  const pendingNames = useMemo(
-    () => new Set(shopping.filter((s) => !s.is_bought).map((s) => s.name.toLowerCase())),
-    [shopping],
-  );
-  const restock = useMemo(
-    () => computeRestock(history).filter((r) => !pendingNames.has(r.name.toLowerCase())).slice(0, 5),
-    [history, pendingNames],
+  const attention = useMemo(
+    () =>
+      buildUpcoming(active).filter((e) =>
+        e.kind === "expiry"
+          ? e.days <= FOOD_WINDOW
+          : e.days <= WARRANTY_WINDOW && e.days >= -WARRANTY_WINDOW,
+      ),
+    [active],
   );
 
-  function addToList(items: RestockSuggestion[]) {
-    if (!items.length) return;
-    addShopping.mutate(
-      items.map((r) => ({ name: r.name, itemId: r.itemId, source: "restock" as const })),
+  function placeOf(ev: UpcomingEvent) {
+    const r = ev.inventory;
+    return (r.location_id && locPaths.get(r.location_id)) || r.location_name || "no place";
+  }
+
+  return (
+    <div className="pn6 mx-auto max-w-3xl space-y-6">
+      <section className="rise space-y-2">
+        <CheckHaveSearch large />
+        <p className="flex flex-wrap justify-between gap-x-4 gap-y-1 px-1 font-mono text-[11px] text-ink-3">
+          <span>
+            {isLoading ? "…" : `${thingCount} things · ${placeCount} places`}
+          </span>
+          {!isLoading && toBuy > 0 && (
+            <Link href="/shopping" className="hover:text-ink">
+              {toBuy} to buy ›
+            </Link>
+          )}
+        </p>
+      </section>
+
+      {/* Needs a look */}
+      <section className="rise i1 min-w-0 space-y-2">
+        <Section
+          label="Needs a look"
+          right={
+            <Link
+              href="/upcoming"
+              className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3 hover:text-ink"
+            >
+              Timeline
+            </Link>
+          }
+        />
+        <div className="card px-4 py-0">
+          {isLoading ? (
+            <div className="space-y-2 py-3">
+              {[0, 1].map((i) => (
+                <div key={i} className="h-10 animate-pulse rounded bg-surface-2" />
+              ))}
+            </div>
+          ) : attention.length === 0 ? (
+            <p className="py-5 text-center text-sm text-ink-3">All clear — nothing needs you.</p>
+          ) : (
+            attention.map((ev) => (
+              <div
+                key={ev.id}
+                className="flex items-center gap-3 border-t border-dotted border-rule-strong py-3 first:border-t-0"
+              >
+                <Led tone={tone(ev.days)} />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 break-words text-sm font-medium">{ev.title}</p>
+                  <p className="truncate text-xs text-ink-3">
+                    {placeOf(ev)} ·{" "}
+                    <span className={cn("mono", ev.days < 0 ? "text-bad" : ev.days <= 3 && "text-watch")}>
+                      {dueText(ev)}
+                    </span>
+                  </p>
+                </div>
+                {ev.kind === "expiry" &&
+                  (ev.days < 0 ? (
+                    <button
+                      className="btn-outline shrink-0 px-2.5 py-1.5"
+                      title="It's gone — thrown out"
+                      onClick={() =>
+                        setStatus.mutate(
+                          { id: ev.inventory.id, status: "expired" },
+                          { onSuccess: () => toast.success(`${ev.title} cleared`) },
+                        )
+                      }
+                    >
+                      Gone
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-outline shrink-0 px-2.5 py-1.5"
+                      title="Use one"
+                      onClick={() =>
+                        consume.mutate(
+                          { id: ev.inventory.id, quantity: Number(ev.inventory.quantity) },
+                          { onSuccess: () => toast.success(`Used 1 ${ev.title}`) },
+                        )
+                      }
+                    >
+                      <Minus className="h-4 w-4" />
+                      Use 1
+                    </button>
+                  ))}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <FixIt />
+    </div>
+  );
+}
+
+// The household's fix-it list, kept small: add, tick, remove — in place.
+function FixIt() {
+  const hydrated = useHydrated();
+  const { data: tasks = [], isLoading: loadingTasks } = useHomeTasks();
+  const isLoading = !hydrated || loadingTasks;
+  const locPaths = useLocationPaths();
+  const add = useAddHomeTask();
+  const toggle = useToggleHomeTask();
+  const del = useDeleteHomeTask();
+  const clearDone = useClearDoneTasks();
+  const [title, setTitle] = useState("");
+
+  const open = useMemo(
+    () =>
+      tasks
+        .filter((t) => !t.is_done)
+        .sort(
+          (a, b) =>
+            (a.priority === "high" ? 0 : 1) - (b.priority === "high" ? 0 : 1) ||
+            b.created_at.localeCompare(a.created_at),
+        ),
+    [tasks],
+  );
+  const doneCount = tasks.length - open.length;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const t = title.trim();
+    if (!t) return;
+    add.mutate(
+      { title: t, priority: "normal", locationId: null, notes: null },
       {
-        onSuccess: () =>
-          toast.success(
-            items.length === 1
-              ? `Added ${items[0].name} to shopping list`
-              : `Added ${items.length} items to shopping list`,
-          ),
+        onSuccess: () => setTitle(""),
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Couldn't add"),
       },
     );
   }
 
-  const isLoading = la || lh;
-  const attention: string[] = [];
-  if (stats.expired > 0) attention.push(`${stats.expired} expired`);
-  if (stats.expiring > 0) attention.push(`${stats.expiring} expiring this week`);
-
   return (
-    <div className="pn6 mx-auto max-w-5xl space-y-5">
-      {/* Hero */}
-      <section className="card rise p-0">
-        <div className="p-5">
-          <div className="no">TROVE</div>
-          <h1 className="title mt-1.5 truncate">
-            {greeting()}
-            {firstName ? `, ${firstName}` : ""}
-          </h1>
-          <p className="mt-1.5 text-sm text-ink-3">Everything in the house, and where it is.</p>
-        </div>
-        <div
-          className="readouts grid-cols-2 rounded-none border-x-0 border-b-0 sm:grid-cols-4"
-          data-loading={isLoading || undefined}
+    <section className="rise i2 min-w-0 space-y-2">
+      <Section
+        label="Fix-it"
+        right={
+          isLoading ? null : doneCount > 0 ? (
+            <button
+              onClick={() => clearDone.mutate()}
+              className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3 hover:text-ink"
+            >
+              Clear {doneCount} done
+            </button>
+          ) : (
+            <span className="meta">{open.length}</span>
+          )
+        }
+      />
+      <div className="card px-4 py-0">
+        {!isLoading &&
+          open.map((t) => (
+            <div
+              key={t.id}
+              className="flex items-center gap-3 border-t border-dotted border-rule-strong py-3 first:border-t-0"
+            >
+              <button
+                onClick={() => toggle.mutate({ id: t.id, is_done: true })}
+                className="group flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-ink-3 hover:border-ink"
+                aria-label={`Mark "${t.title}" done`}
+              >
+                <Check className="h-3.5 w-3.5 opacity-0 group-hover:opacity-40" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 break-words text-sm font-medium">{t.title}</p>
+                {(t.location_id || t.notes) && (
+                  <p className="truncate text-xs text-ink-3">
+                    {[t.location_id ? locPaths.get(t.location_id) : null, t.notes]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
+              </div>
+              {t.priority === "high" && (
+                <Flag className="h-3.5 w-3.5 shrink-0 text-bad" aria-label="High priority" />
+              )}
+              <button
+                onClick={() => del.mutate(t.id)}
+                className="btn-ghost shrink-0 px-2 py-1.5 text-text-muted hover:text-bad"
+                aria-label={`Remove "${t.title}"`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        <form
+          onSubmit={submit}
+          className={cn(
+            "flex items-center gap-3 py-2",
+            open.length > 0 && "border-t border-dotted border-rule-strong",
+          )}
         >
-          <Readout k="In stock" v={String(productCount)} to="/inventory" />
-          <Readout
-            k="Expiring ≤7d"
-            v={String(stats.expiring)}
-            tone={stats.expiring ? "var(--watch)" : undefined}
-            to="/upcoming"
+          <Plus className="h-4 w-4 shrink-0 text-ink-3" />
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Add a fix…"
+            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-ink-3"
+            enterKeyHint="done"
+            aria-label="New fix-it"
           />
-          <Readout k="Open fix-its" v={String(stats.openFixes)} to="/fixit" />
-          <Readout k="To buy" v={String(stats.toBuy)} to="/shopping" />
-        </div>
-      </section>
-
-      {/* Attention */}
-      {attention.length > 0 && (
-        <Link
-          href="/upcoming"
-          className="card rise i1 flex items-center gap-3 p-3.5 transition-colors hover:bg-surface-2"
-        >
-          <Led tone="watch" pulse />
-          <span className="flex-1 text-sm font-medium" style={{ color: "var(--watch)" }}>
-            {attention.join(" · ")}.
-          </span>
-          <ArrowRight className="h-4 w-4 shrink-0 text-ink-3" />
-        </Link>
-      )}
-
-      {/* Two columns */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="card rise i2 min-w-0 p-4">
-          <Section label="Upcoming" right={<ViewAll href="/upcoming" />} />
-          <div className="mt-3">
-            {isLoading ? (
-              <Skeleton />
-            ) : upcoming.length === 0 ? (
-              <Empty text="Nothing coming up." />
-            ) : (
-              <ul>
-                {upcoming.map((ev) => (
-                  <li
-                    key={ev.id}
-                    className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0"
-                  >
-                    <Led tone={dueTone(ev.days)} />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 break-words text-sm font-medium">{ev.title}</p>
-                      <p className="truncate text-xs text-ink-3">{ev.subtitle}</p>
-                    </div>
-                    <span className={cn("mono shrink-0 text-xs", toneClass(dueTone(ev.days)))}>
-                      {dueLabel(ev.days)}
-                    </span>
-                    {ev.kind === "expiry" && (
-                      <button
-                        onClick={() =>
-                          consume.mutate(
-                            { id: ev.inventory.id, quantity: Number(ev.inventory.quantity) },
-                            { onSuccess: () => toast.success(`Used 1 ${ev.title}`) },
-                          )
-                        }
-                        className="btn-ghost shrink-0 px-2 py-1.5"
-                        title="Use one"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
-
-        <section className="card rise i3 min-w-0 p-4">
-          <Section
-            label="Running low"
-            right={
-              restock.length > 0 ? (
-                <button
-                  onClick={() => addToList(restock)}
-                  disabled={addShopping.isPending}
-                  className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3 hover:text-ink"
-                >
-                  Add all
-                </button>
-              ) : undefined
-            }
-          />
-          <div className="mt-3">
-            {isLoading ? (
-              <Skeleton />
-            ) : restock.length === 0 ? (
-              <Empty text="Nothing looks like it is running out." />
-            ) : (
-              <ul>
-                {restock.map((r) => (
-                  <li
-                    key={r.key}
-                    className="flex items-center gap-3 border-t border-dotted border-rule-strong py-2.5 first:border-t-0"
-                  >
-                    <Led tone={r.reason === "out" ? "bad" : r.reason === "due" ? "watch" : "ink"} />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 break-words text-sm font-medium">{r.name}</p>
-                      <p className="truncate text-xs text-ink-3">{r.detail}</p>
-                    </div>
-                    <button
-                      onClick={() => addToList([r])}
-                      className="btn-outline shrink-0 px-2.5 py-1.5"
-                      title="Add to shopping list"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      List
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
+          {title.trim() && (
+            <button className="btn-primary shrink-0 px-3 py-1.5" disabled={add.isPending}>
+              Add
+            </button>
+          )}
+        </form>
       </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <QuickAction href="/add" icon={ScanText} label="Add / scan" />
-        <QuickAction href="/shopping" icon={ShoppingCart} label="Shopping" />
-        <QuickAction href="/fixit" icon={Hammer} label="Fix-it" />
-        <button
-          onClick={() => window.dispatchEvent(new Event("trove:command"))}
-          className="card flex items-center justify-center gap-2 p-3 text-xs font-semibold uppercase tracking-[0.08em] hover:bg-surface-2"
-        >
-          <Search className="h-[18px] w-[18px]" />
-          Search · ⌘K
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Readout({ k, v, tone, to }: { k: string; v: string; tone?: string; to?: string }) {
-  const body = (
-    <>
-      <span className="k">{k}</span>
-      <span className="v" style={tone ? { color: tone } : undefined}>
-        {v}
-      </span>
-    </>
-  );
-  return to ? (
-    <Link href={to} className="ro transition-colors hover:bg-surface-2">
-      {body}
-    </Link>
-  ) : (
-    <div className="ro">{body}</div>
-  );
-}
-
-function ViewAll({ href }: { href: string }) {
-  return (
-    <Link href={href} className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3 hover:text-ink">
-      View all
-    </Link>
-  );
-}
-
-function toneClass(t: "bad" | "watch" | "ink") {
-  return t === "bad" ? "text-bad" : t === "watch" ? "text-watch" : "text-ink-3";
-}
-
-function QuickAction({ href, icon: Icon, label }: { href: string; icon: typeof ScanText; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="card flex items-center justify-center gap-2 p-3 text-xs font-semibold uppercase tracking-[0.08em] hover:bg-surface-2"
-    >
-      <Icon className="h-[18px] w-[18px]" />
-      {label}
-    </Link>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return <p className="py-6 text-center text-sm text-ink-3">{text}</p>;
-}
-function Skeleton() {
-  return (
-    <div className="space-y-2 py-2">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="h-10 animate-pulse rounded bg-surface-2" />
-      ))}
-    </div>
+    </section>
   );
 }

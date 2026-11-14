@@ -7,7 +7,7 @@ import { expiryBucket, EXPIRY_STYLES, expiryLabel, cn } from "@/lib/utils";
 
 // The headline feature: type a grocery name and instantly see whether you
 // already have it somewhere in the house — before you buy it again.
-export function CheckHaveSearch() {
+export function CheckHaveSearch({ large = false }: { large?: boolean } = {}) {
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
@@ -33,9 +33,9 @@ export function CheckHaveSearch() {
   const totalQty = results.reduce((s, r) => s + Number(r.quantity || 0), 0);
 
   return (
-    <div ref={boxRef} className="relative max-w-xl">
+    <div ref={boxRef} className={cn("relative", large ? "w-full" : "max-w-xl")}>
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-text-muted" />
+        <Search className={cn("pointer-events-none absolute top-1/2 -translate-y-1/2 text-text-muted", large ? "left-4 h-5 w-5" : "left-3 h-[18px] w-[18px]")} />
         <input
           value={term}
           onChange={(e) => {
@@ -43,8 +43,9 @@ export function CheckHaveSearch() {
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          placeholder="Do I have…?  Search your home — rice, shampoo, batteries…"
-          className="input pl-10 pr-9"
+          placeholder="Do I have…?"
+          className={cn("input pr-9", large ? "h-14 pl-12 text-base" : "pl-10")}
+          enterKeyHint="search"
         />
         {term && (
           <button
@@ -61,7 +62,12 @@ export function CheckHaveSearch() {
       </div>
 
       {showPanel && (
-        <div className="absolute left-0 right-0 top-12 z-40 max-h-[60vh] overflow-auto rounded-2xl border bg-surface p-2 shadow-xl">
+        <div
+          className={cn(
+            "absolute left-0 right-0 z-40 max-h-[60vh] overflow-auto rounded-2xl border bg-surface p-2 shadow-xl",
+            large ? "top-16" : "top-12",
+          )}
+        >
           {isFetching && results.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-text-muted">Searching…</p>
           ) : results.length === 0 ? (
@@ -73,7 +79,7 @@ export function CheckHaveSearch() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-brand-600">
+              <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-good">
                 <Check className="h-4 w-4" />
                 Yes — {results.length} match{results.length > 1 ? "es" : ""} ·{" "}
                 {totalQty} total in stock
@@ -87,7 +93,7 @@ export function CheckHaveSearch() {
                       className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 hover:bg-surface-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
+                        <p className="line-clamp-2 break-words text-sm font-medium">
                           {r.item_name}
                           {r.item_brand && (
                             <span className="text-text-muted"> · {r.item_brand}</span>

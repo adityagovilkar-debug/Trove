@@ -190,6 +190,21 @@ removes most of the clutter.
   the household switcher lives in Settings. Push reminders now cover food
   expiring and warranties ending. No database rows or tables were removed.
 
+- **Mobile fix — 2026-11-14.** The dashboard was 432px wide on a 375px
+  phone (a grid column could not shrink below a long item name), which pushed
+  the bottom bar's last icon off-screen and let the browser pan the bar away
+  while scrolling. Fixed at the source; long names wrap to two lines; the
+  page can no longer scroll sideways; the bar pads for the gesture area.
+- **Phase 2 — done 2026-11-14.** Four screens: **Home** (big search, "Needs
+  a look" for food expiring ≤7 days and warranties ≤30 days, Fix-it as a
+  small in-place list), **Stuff** (Pantry + Things merged; Food / Supplies /
+  Things / Unsorted filters; grouped by place; In stock / History), **Places**
+  (house tree with counts, open a place to see what is in it, place editing
+  moved here from Settings), **Shopping** (unchanged until phase 3). Phone bar:
+  Home · Stuff · Add · Places · Shop. Old addresses redirect (/inventory,
+  /things, /fixit and the phase 1 removals). Item cards rebuilt for phone
+  width. Upcoming stays reachable as the "Timeline" link on Home.
+
 **Correction (2026-11-14):** the "duplicate places" noted during phase 0 were
 not duplicates. They belong to a second, empty household that Neha's account
 created on 8 July; the read-only check had looked across all households.
