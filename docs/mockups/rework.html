@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trove rework mockup</title>
+<style>
+:root{
+  --paper:#FFFFFF;--paper-2:#FBFAF7;--grid-dot:#DEDDD6;--rule:#E7E6DF;--rule-strong:#D6D5CC;
+  --ink:#12141A;--ink-2:#5A5E68;--ink-3:#9A9EA8;--ink-4:#C3C5CB;
+  --pen:#C2410C;--good:#0E7C63;--watch:#B07500;--bad:#D93A1E;
+  --desk:#F3F2EE;--r:3px;
+  --sans:"Inter","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
+}
+:root[data-theme="dark"]{
+  --paper:#0E0F12;--paper-2:#15161B;--grid-dot:#24262D;--rule:#1F2127;--rule-strong:#30333B;
+  --ink:#E8E9EC;--ink-2:#A6AAB3;--ink-3:#6E727C;--ink-4:#383B43;
+  --pen:#F07A3A;--good:#2BC29B;--watch:#E0A526;--bad:#FF5A3C;--desk:#08090B;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--desk);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* page chrome */
+.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:16px;padding:14px 24px;background:var(--paper);border-bottom:1px solid var(--rule)}
+.top .wm{font-family:var(--mono);font-size:12px;letter-spacing:.34em;font-weight:600}
+.top .wm em{font-style:normal;font-family:var(--sans);letter-spacing:.2em;font-size:8.5px;color:var(--ink-3);font-weight:600;margin-left:10px;text-transform:uppercase}
+.top .sp{flex:1}
+.seg{display:inline-grid;grid-auto-flow:column;border:1px solid var(--rule);border-radius:var(--r);padding:2px;gap:2px;background:var(--paper-2)}
+.seg button{height:24px;padding:0 12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);border-radius:2px;letter-spacing:.06em}
+.seg button.on{background:var(--paper);color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+.intro{max-width:1100px;margin:22px auto 4px;padding:0 24px;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.intro b{color:var(--ink);font-weight:600}
+
+.wall{display:flex;flex-wrap:wrap;gap:34px 28px;justify-content:center;padding:26px 24px 60px}
+.slot{width:360px}
+.slot .cap{display:flex;align-items:baseline;gap:10px;margin:0 2px 10px}
+.slot .cap .no{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--pen)}
+.slot .cap h2{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em}
+.slot .why{margin:10px 2px 0;font-size:12px;line-height:1.5;color:var(--ink-2)}
+.slot .why li{margin:3px 0}
+.slot .why ul{margin:0;padding-left:16px}
+
+/* the phone */
+.phone{position:relative;height:720px;border:1px solid var(--rule-strong);border-radius:14px;overflow:hidden;
+  background-color:var(--paper-2);
+  background-image:radial-gradient(circle,var(--grid-dot) .9px,transparent 1.2px);background-size:14px 14px;
+  display:flex;flex-direction:column}
+.scr{flex:1;overflow:hidden;padding:14px 14px 0}
+.scr.more-below{-webkit-mask-image:linear-gradient(#000 88%,transparent);mask-image:linear-gradient(#000 88%,transparent)}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.bar .wm{font-family:var(--mono);font-size:11px;letter-spacing:.32em;font-weight:600}
+.ic{width:28px;height:28px;display:inline-grid;place-items:center;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);color:var(--ink-2)}
+.ic svg{width:15px;height:15px}
+.plate{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--pen)}
+.title{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:2px 0 2px}
+.sub{font-size:12px;color:var(--ink-3)}
+
+/* unit: hairline panel with corner tics */
+.unit{position:relative;background:var(--paper);border:1px solid var(--rule);border-radius:var(--r)}
+.unit::before,.unit::after{content:"";position:absolute;width:6px;height:6px;border:solid var(--rule-strong);pointer-events:none}
+.unit::before{top:-1px;left:-1px;border-width:1px 0 0 1px}
+.unit::after{bottom:-1px;right:-1px;border-width:0 1px 1px 0}
+
+.search{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;font-size:15px;color:var(--ink-3)}
+.search svg{width:18px;height:18px;color:var(--ink-2);flex:none}
+.search .scan{margin-left:auto}
+.hint{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin:7px 2px 0;display:flex;justify-content:space-between}
+
+.sech{display:flex;align-items:center;gap:10px;margin:18px 2px 8px}
+.sech h3{margin:0;font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.sech::after{content:"";flex:1;border-top:1px dotted var(--rule-strong)}
+.sech .n{order:2;font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+
+.rows{padding:0 12px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px dotted var(--rule-strong)}
+.row:first-child{border-top:0}
+.row .main{min-width:0;flex:1}
+.row .nm{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .mt{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.row .mt .mono{font-size:10.5px}
+.row .rt{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);white-space:nowrap;text-align:right}
+.led{width:8px;height:8px;border-radius:50%;flex:none;background:var(--ink-4)}
+.led.bad{background:var(--bad)}.led.watch{background:var(--watch)}.led.ink{background:var(--ink-3)}
+.t-bad{color:var(--bad)}.t-watch{color:var(--watch)}
+
+.btn{height:28px;padding:0 10px;border:1px solid var(--rule-strong);border-radius:var(--r);background:var(--paper);font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.btn.ink{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.wide{height:40px;flex:1;font-size:11px}
+.acts{display:flex;gap:6px}
+
+.chk{width:18px;height:18px;border:1.5px solid var(--ink-3);border-radius:3px;flex:none;display:grid;place-items:center}
+.chk.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chk svg{width:12px;height:12px}
+.addline{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px dotted var(--rule-strong);font-size:12.5px;color:var(--ink-3)}
+.addline .plus{width:18px;text-align:center;font-family:var(--mono)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{height:26px;padding:0 10px;border:1px solid var(--rule);border-radius:var(--r);font-family:var(--mono);font-size:10.5px;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px;background:var(--paper);white-space:nowrap}
+.chip.on{border-color:var(--ink);color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+.chip .c{color:var(--ink-3)}
+.tag{font-family:var(--mono);font-size:9.5px;color:var(--ink-2);border:1px solid var(--rule);border-radius:2px;padding:1px 5px;margin-left:4px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin:10px 2px 8px;font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+
+/* places tree */
+.tree .row{padding:9px 0}
+.tw{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:12px;flex:none}
+.tree .d1{padding-left:18px}.tree .d2{padding-left:36px}
+.cnt{font-family:var(--mono);font-size:10.5px;color:var(--ink-2);min-width:18px;text-align:right}
+.peek{margin:2px 0 8px 36px;padding:8px 10px;background:var(--paper-2);border:1px solid var(--rule);border-radius:var(--r)}
+.peek .pi{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.peek .pi .mono{font-size:10.5px;color:var(--ink-3)}
+.callout{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;font-size:12px;line-height:1.45;color:var(--ink-2)}
+.callout b{color:var(--ink);font-weight:600}
+
+/* add sheet */
+.sheet{position:absolute;inset:auto 0 0 0;top:64px;background:var(--paper);border-top:1px solid var(--rule-strong);border-radius:12px 12px 0 0;padding:16px 16px 0;display:flex;flex-direction:column}
+.scrim{position:absolute;inset:0;background:rgb(18 20 26 / .38)}
+:root[data-theme="dark"] .scrim{background:rgb(0 0 0 / .62)}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--rule-strong);margin:0 auto 12px}
+.lab{font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 6px}
+.inp{height:42px;border:1px solid var(--rule-strong);border-radius:var(--r);padding:0 12px;display:flex;align-items:center;gap:8px;font-size:14px;background:var(--paper)}
+.inp.focus{border-color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+.inp .ph{color:var(--ink-3)}
+.inp .end{margin-left:auto;color:var(--ink-3)}
+.caret{display:inline-block;width:1.5px;height:16px;background:var(--ink);margin-left:-6px;animation:b 1.1s steps(1) infinite}
+@keyframes b{50%{opacity:0}}
+.step{display:inline-flex;align-items:center;border:1px solid var(--rule-strong);border-radius:var(--r);height:36px}
+.step span{width:36px;text-align:center;font-family:var(--mono);color:var(--ink-2)}
+.step b{width:36px;text-align:center;font-family:var(--mono);font-weight:500;border-inline:1px solid var(--rule)}
+.more{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px dotted var(--rule-strong);border-bottom:1px dotted var(--rule-strong);margin-top:16px;font-size:12px;color:var(--ink-2)}
+.more .mono{font-size:10.5px;color:var(--ink-3)}
+.sheet .foot{margin-top:auto;display:flex;gap:8px;padding:14px 0 16px}
+
+/* thing page */
+.kv{display:grid;grid-template-columns:96px 1fr;gap:0;font-size:12.5px}
+.kv div{padding:9px 0;border-top:1px dotted var(--rule-strong)}
+.kv div:nth-child(-n+2){border-top:0}
+.kv .k{font-size:9.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);padding-top:11px}
+.fate{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.fate .btn{height:34px}
+.seen{display:flex;align-items:center;justify-content:space-between;padding:12px}
+.seen .big{font-family:var(--mono);font-size:15px}
+
+/* bottom nav + toast */
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--rule);background:var(--paper);height:58px;flex:none}
+.nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);position:relative}
+.nav a svg{width:18px;height:18px}
+.nav a.on{color:var(--ink)}
+.nav a.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:2px;background:var(--ink)}
+.nav a.add span.box{width:36px;height:36px;border-radius:var(--r);background:var(--ink);color:var(--paper);display:grid;place-items:center}
+.toast{position:absolute;left:12px;right:12px;bottom:70px;display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--ink);color:var(--paper);border-radius:var(--r);font-size:12px}
+.toast .mono{font-size:10.5px;opacity:.75}
+.toast b{margin-left:auto;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.gone{opacity:.45;text-decoration:line-through}
+.dim{color:var(--ink-3)}
+
+/* decisions strip */
+.dec{max-width:1100px;margin:0 auto 40px;padding:0 24px}
+.dec table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--paper);border:1px solid var(--rule)}
+.dec th,.dec td{text-align:left;padding:9px 12px;border-top:1px solid var(--rule);vertical-align:top}
+.dec th{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:600;border-top:0}
+.dec td.mono{color:var(--ink-3);font-size:11px;white-space:nowrap}
+@media (max-width:760px){.top{flex-wrap:wrap}.slot{width:100%;max-width:360px}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="wm">TROVE<em>Rework mockup · v1</em></div>
+  <div class="sp"></div>
+  <div class="seg" role="tablist" aria-label="Theme">
+    <button class="on" data-t="light">PAPER</button>
+    <button data-t="dark">BACKLIT</button>
+  </div>
+</div>
+
+<p class="intro">
+  <b>Four screens instead of thirteen.</b> Home is a finder, not a dashboard: one search box, then only what needs you.
+  Everything lives in one list (Stuff) and one map of the house (Places). Shopping turns a tick into stock.
+  Real items and places come from your data; <b>the blankets, chargers and jacket are examples</b> from your message.
+  Nothing here is built yet.
+</p>
+
+<div class="wall">
+
+<!-- 01 HOME -->
+<section class="slot">
+  <div class="cap"><span class="no">01</span><h2>Home</h2></div>
+  <div class="phone">
+    <div class="scr">
+      <div class="bar">
+        <span class="wm">TROVE</span>
+        <span class="ic" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
+      </div>
+
+      <div class="unit search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Do I have…?
+        <span class="scan ic" title="Scan a barcode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg></span>
+      </div>
+      <div class="hint"><span>32 things · 24 places</span><span>try "charger", "blanket"</span></div>
+
+      <div class="sech"><h3>Needs a look</h3><span class="n">4</span></div>
+      <div class="unit rows">
+        <div class="row">
+          <span class="led bad"></span>
+          <div class="main"><div class="nm">Greek Yogurt</div><div class="mt">Refrigerator · <span class="mono t-bad">expired 130d ago</span></div></div>
+          <div class="acts"><button class="btn">Gone</button></div>
+        </div>
+        <div class="row">
+          <span class="led bad"></span>
+          <div class="main"><div class="nm">Rawa</div><div class="mt"><span class="dim">no place</span> · <span class="mono t-bad">expired 67d ago</span></div></div>
+          <div class="acts"><button class="btn">Gone</button></div>
+        </div>
+        <div class="row">
+          <span class="led watch"></span>
+          <div class="main"><div class="nm">Tandoori Masala</div><div class="mt">Dry Ota › Right Mid Drawer · <span class="mono t-watch">in 20d</span></div></div>
+        </div>
+        <div class="row">
+          <span class="led ink"></span>
+          <div class="main"><div class="nm">Metro Laptop</div><div class="mt">Office Backpack · <span class="mono">last seen Jun</span></div></div>
+          <div class="acts"><button class="btn">Still there</button></div>
+        </div>
+      </div>
+
+      <div class="sech"><h3>Fix-it</h3><span class="n">1</span></div>
+      <div class="unit rows">
+        <div class="row">
+          <span class="chk"></span>
+          <div class="main"><div class="nm">Fix lock on main door</div><div class="mt">Hall</div></div>
+        </div>
+        <div class="addline"><span class="plus">+</span>Add a fix…</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Home</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Stuff</a>
+      <a class="add"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Places</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Shop</a>
+    </nav>
+  </div>
+  <div class="why"><ul>
+    <li>Search is the screen. The barcode button sits inside it.</li>
+    <li>"Needs a look" is empty when nothing is wrong — no dials, no spend figures.</li>
+    <li><b>Last seen</b> lets an old entry ask to be confirmed instead of quietly going stale.</li>
+    <li>Fix-it is a short list here, added and ticked in place (decision B).</li>
+  </ul></div>
+</section>
+
+<!-- 02 STUFF -->
+<section class="slot">
+  <div class="cap"><span class="no">02</span><h2>Stuff</h2></div>
+  <div class="phone">
+    <div class="scr more-below">
+      <div class="plate">STUFF</div>
+      <div class="title">Everything</div>
+      <div class="chips" style="margin-top:10px">
+        <span class="chip on">All <span class="c">32</span></span>
+        <span class="chip">Food <span class="c">11</span></span>
+        <span class="chip">Supplies <span class="c">4</span></span>
+        <span class="chip">Things <span class="c">17</span></span>
+        <span class="chip">Running low <span class="c">2</span></span>
+        <span class="chip">Lent <span class="c">0</span></span>
+      </div>
+      <div class="toolbar"><span>SORT · BY PLACE ▾</span><span>A–Z · RECENT</span></div>
+
+      <div class="sech" style="margin-top:4px"><h3>Store Room</h3><span class="n">3</span></div>
+      <div class="unit rows">
+        <div class="row"><div class="main"><div class="nm">Winter blankets</div><div class="mt"><span class="mono">×3</span><span class="tag">winter</span><span class="tag">guest</span></div></div><span class="rt">trunk</span></div>
+        <div class="row"><div class="main"><div class="nm">Navy bandhgala jacket</div><div class="mt"><span class="mono">×1</span><span class="tag">occasions</span></div></div><span class="rt">garment bag</span></div>
+        <div class="row"><div class="main"><div class="nm">Old pressure cooker</div><div class="mt"><span class="mono">×1</span><span class="tag">spare</span></div></div><span class="rt"></span></div>
+      </div>
+
+      <div class="sech"><h3>Study Cabinet</h3><span class="n">2</span></div>
+      <div class="unit rows">
+        <div class="row"><div class="main"><div class="nm">USB-C chargers</div><div class="mt"><span class="mono">×4</span><span class="tag">usb-c</span><span class="tag">65w</span></div></div><span class="rt">top drawer</span></div>
+        <div class="row"><div class="main"><div class="nm">HDMI cables</div><div class="mt"><span class="mono">×2</span><span class="tag">2m</span></div></div><span class="rt"></span></div>
+      </div>
+
+      <div class="sech"><h3>Refrigerator</h3><span class="n">4</span></div>
+      <div class="unit rows">
+        <div class="row"><span class="led bad"></span><div class="main"><div class="nm">Greek Yogurt</div><div class="mt"><span class="mono">2 pcs</span></div></div><span class="rt t-bad">exp 130d</span></div>
+        <div class="row"><span class="led"></span><div class="main"><div class="nm">Butter</div><div class="mt"><span class="mono">1 box</span></div></div><span class="rt">May '27</span></div>
+        <div class="row"><span class="led"></span><div class="main"><div class="nm">Red Bull</div><div class="mt"><span class="mono">1 can</span></div></div><span class="rt"></span></div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Home</a>
+      <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Stuff</a>
+      <a class="add"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Places</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Shop</a>
+    </nav>
+  </div>
+  <div class="why"><ul>
+    <li>Pantry and Things become one list. Food, Supplies and Things are filters, not separate apps.</li>
+    <li>Grouped by place by default, because that is how you go and look.</li>
+    <li>Tags carry what used to need a whole kind (winter, usb-c, occasions).</li>
+    <li>Only food shows an expiry; kept things show nothing they don't need.</li>
+  </ul></div>
+</section>
+
+<!-- 03 PLACES -->
+<section class="slot">
+  <div class="cap"><span class="no">03</span><h2>Places</h2></div>
+  <div class="phone">
+    <div class="scr more-below">
+      <div class="plate">PLACES</div>
+      <div class="title">The house</div>
+      <div class="sub">Tap a place to see what is in it.</div>
+
+      <div class="unit callout" style="margin-top:12px">
+        <span class="led watch" style="margin-top:4px"></span>
+        <div><b>3 places look doubled.</b> "Refrigerator" appears twice, and "Freezer" is both a room and a shelf inside the fridge. <span class="mono" style="color:var(--ink)">MERGE ›</span></div>
+      </div>
+
+      <div class="sech"><h3>Rooms</h3><span class="n">9</span></div>
+      <div class="unit rows tree">
+        <div class="row"><span class="tw">▾</span><div class="main"><div class="nm">Dry Balcony</div></div><span class="cnt">5</span></div>
+        <div class="row d1"><span class="tw">·</span><div class="main"><div class="nm">Bottom Shelf</div></div><span class="cnt">0</span></div>
+        <div class="row d1"><span class="tw">·</span><div class="main"><div class="nm">Second Shelf</div></div><span class="cnt">2</span></div>
+        <div class="row d1"><span class="tw">▾</span><div class="main"><div class="nm">Third Shelf</div></div><span class="cnt">2</span></div>
+        <div class="peek">
+          <div class="pi"><span>Choco Fruit Crunch Muesli</span><span class="mono">1 pack</span></div>
+          <div class="pi"><span>Piri Piri Makhana</span><span class="mono">2 pack</span></div>
+        </div>
+        <div class="row"><span class="tw">▸</span><div class="main"><div class="nm">Kitchen</div><div class="mt">Dry Ota · Shelf · Wall Cabinets</div></div><span class="cnt">2</span></div>
+        <div class="row"><span class="tw">▸</span><div class="main"><div class="nm">Refrigerator</div><div class="mt">Vegetable Drawer · Freezer</div></div><span class="cnt">4</span></div>
+        <div class="row"><span class="tw">▸</span><div class="main"><div class="nm">Store Room</div></div><span class="cnt">3</span></div>
+        <div class="row"><span class="tw">▸</span><div class="main"><div class="nm">Study Cabinet</div></div><span class="cnt">2</span></div>
+        <div class="row"><span class="tw">·</span><div class="main"><div class="nm">Office Backpack</div></div><span class="cnt">1</span></div>
+        <div class="row"><span class="tw">·</span><div class="main"><div class="nm dim">Hall · Bathroom · TV Unit …</div></div><span class="cnt dim">0</span></div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Home</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Stuff</a>
+      <a class="add"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></a>
+      <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Places</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Shop</a>
+    </nav>
+  </div>
+  <div class="why"><ul>
+    <li>Places gets its own tab — it used to be buried in Settings.</li>
+    <li>Open a place to see its contents in place ("what's in the trunk?").</li>
+    <li>Places are edited here too: add, rename, move, and <b>merge</b> the duplicates your data already has.</li>
+  </ul></div>
+</section>
+
+<!-- 04 SHOPPING -->
+<section class="slot">
+  <div class="cap"><span class="no">04</span><h2>Shopping</h2></div>
+  <div class="phone">
+    <div class="scr">
+      <div class="plate">SHOPPING</div>
+      <div class="title">To buy</div>
+      <div class="unit inp" style="margin-top:10px"><span class="ph">Add an item…</span><span class="end mono">+</span></div>
+
+      <div class="sech"><h3>To buy</h3><span class="n">3</span></div>
+      <div class="unit rows">
+        <div class="row"><span class="chk"></span><div class="main"><div class="nm">Handwash Refill</div><div class="mt">ran out · goes to Dry Balcony › Bottom Shelf</div></div></div>
+        <div class="row"><span class="chk"></span><div class="main"><div class="nm">G7 Instant Coffee</div><div class="mt">ran out · goes to Kitchen › Wall Cabinets</div></div></div>
+        <div class="row"><span class="chk on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg></span><div class="main"><div class="nm gone">Greek Yogurt Natural</div><div class="mt">bought · back in Refrigerator</div></div></div>
+      </div>
+      <div class="sub" style="margin:10px 2px 0;line-height:1.5">Tick means <b style="color:var(--ink);font-weight:600">bought</b>: it goes back into stock with last time's place and amount. Long-press to change them.</div>
+    </div>
+    <div class="toast"><span>Greek Yogurt Natural → Refrigerator</span><span class="mono">×2</span><b>Undo</b></div>
+    <nav class="nav">
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Home</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Stuff</a>
+      <a class="add"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Places</a>
+      <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Shop</a>
+    </nav>
+  </div>
+  <div class="why"><ul>
+    <li>Today, buying means filling a form. Here a tick is enough.</li>
+    <li>No "in the cart" pile to clear: bought things leave the list and land in stock.</li>
+    <li>Things you finish still drop onto the list automatically, and "running low" is a tap you make — no guessed predictions.</li>
+  </ul></div>
+</section>
+
+<!-- 05 ADD -->
+<section class="slot">
+  <div class="cap"><span class="no">05</span><h2>Add</h2></div>
+  <div class="phone">
+    <div class="scr" style="opacity:.5">
+      <div class="bar"><span class="wm">TROVE</span></div>
+      <div class="unit search">Do I have…?</div>
+    </div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="plate">ADD</div>
+      <div class="title" style="font-size:19px">Add something</div>
+
+      <div class="lab">What is it?</div>
+      <div class="inp focus">Winter blanket<span class="caret"></span><span class="end"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg></span></div>
+
+      <div class="lab">Where does it live?</div>
+      <div class="inp"><span>Store Room</span><span class="end mono" style="font-size:10.5px">› trunk</span></div>
+      <div class="chips" style="margin-top:7px">
+        <span class="chip">Refrigerator</span><span class="chip">Study Cabinet</span><span class="chip">Dry Balcony › Third Shelf</span>
+      </div>
+
+      <div style="display:flex;gap:16px;align-items:flex-end">
+        <div><div class="lab">How many</div><div class="step"><span>−</span><b>3</b><span>+</span></div></div>
+        <div style="flex:1"><div class="lab">Kind <span style="letter-spacing:0;text-transform:none;font-weight:400">· guessed</span></div>
+          <div class="chips"><span class="chip on">Clothing &amp; linen</span><span class="chip">Other</span></div></div>
+      </div>
+
+      <div class="more"><span>More details</span><span class="mono">tags · expiry · value · notes ▸</span></div>
+
+      <div class="foot">
+        <button class="btn wide">Save + another</button>
+        <button class="btn ink wide">Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="why"><ul>
+    <li>Two answers and it can be saved: <b>what</b> and <b>where</b>. Count defaults to 1.</li>
+    <li>The kind is guessed from the name; recent places are one tap.</li>
+    <li>Gone from the form: brand, category, store, price, pack size, purchase date, nutrition.</li>
+    <li>Barcode scan fills the name for packaged food.</li>
+  </ul></div>
+</section>
+
+<!-- 06 THING -->
+<section class="slot">
+  <div class="cap"><span class="no">06</span><h2>A kept thing</h2></div>
+  <div class="phone">
+    <div class="scr">
+      <div class="bar"><span class="ic">‹</span><span class="mono dim" style="font-size:10.5px">THINGS · CLOTHING &amp; LINEN</span><span class="ic">✎</span></div>
+      <div class="title">Navy bandhgala jacket</div>
+      <div class="sub">Kept for weddings and pujas.</div>
+
+      <div class="unit" style="margin-top:12px;padding:2px 12px">
+        <div class="kv">
+          <div class="k">Where</div><div>Store Room › garment bag</div>
+          <div class="k">How many</div><div class="mono">1</div>
+          <div class="k">Tags</div><div><span class="tag" style="margin-left:0">occasions</span><span class="tag">dry-clean</span></div>
+          <div class="k">Value</div><div class="mono">₹18,000 · 2024</div>
+        </div>
+      </div>
+
+      <div class="unit seen" style="margin-top:10px">
+        <div><div class="lab" style="margin:0 0 4px">Last seen</div><div class="big">Mar 2026 <span class="dim" style="font-size:11px">· 8 mo</span></div></div>
+        <button class="btn">Seen it today</button>
+      </div>
+
+      <div class="sech"><h3>Where it went</h3></div>
+      <div class="fate">
+        <button class="btn">Lent</button><button class="btn">Given away</button><button class="btn">Sold</button>
+        <button class="btn">Lost</button><button class="btn">Thrown out</button><button class="btn">Used up</button>
+      </div>
+      <div class="sub" style="margin:10px 2px 0;line-height:1.5">Kept things don't "finish" like food. Lent asks to whom and shows on Home until it is back. Your Japanese Umbrella is currently marked <span class="mono">finished</span> — this is where it would say <b style="color:var(--ink);font-weight:600">lost</b> or <b style="color:var(--ink);font-weight:600">given away</b>.</div>
+    </div>
+    <nav class="nav">
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Home</a>
+      <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Stuff</a>
+      <a class="add"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Places</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>Shop</a>
+    </nav>
+  </div>
+  <div class="why"><ul>
+    <li>Kept things get their own page shape: where, tags, last seen, and how it left.</li>
+    <li>Value and year are optional, for the few things worth insuring or remembering.</li>
+    <li>No photos (decision E): name, tags and place do the recognising.</li>
+  </ul></div>
+</section>
+
+</div>
+
+<div class="dec">
+  <table>
+    <tr><th>Leaves the app</th><th>Where it goes</th></tr>
+    <tr><td>Subscriptions</td><td class="mono">Kosha · exported to exports/retired-2026-11-14</td></tr>
+    <tr><td>Recipes, meal plans, cook-and-deduct, use-by-amount, pack sizes</td><td class="mono">removed (A) · recipes exported</td></tr>
+    <tr><td>Books and shelf classification</td><td class="mono">Stacks · none were stored</td></tr>
+    <tr><td>Plans</td><td class="mono">removed · none were stored</td></tr>
+    <tr><td>Trends, spend, price tracker, waste in ₹</td><td class="mono">Kosha's job</td></tr>
+    <tr><td>Receipt scanning, label scanning, nutrition, on-device AI model</td><td class="mono">removed (C)</td></tr>
+    <tr><td>Kitchen / Home switch, two dashboards, Upcoming page</td><td class="mono">one Home screen</td></tr>
+    <tr><td>Email digest</td><td class="mono">push only (D)</td></tr>
+    <tr><td>Household switcher and invites</td><td class="mono">moved into Settings (G)</td></tr>
+  </table>
+</div>
+
+<script>
+const root=document.documentElement;
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));
+  root.dataset.theme=b.dataset.t;
+}));
+</script>
+</body>
+</html>

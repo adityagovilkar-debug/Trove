@@ -86,7 +86,7 @@ The design language and the building blocks stay; those screens go.
 
 1. **Home** — a big search box. Under it, only what needs attention: expired
    or expiring food, warranties ending, things lent out. Empty when all is
-   well.
+   well. Below that, the Fix-it list: a few lines, add and tick in place.
 2. **Stuff** — everything in one list. Filter chips: All · Food · Supplies ·
    Things. Sort by name, place, or recently added.
 3. **Places** — the house as a tree. Tap a room, cupboard or box to see what
@@ -99,7 +99,7 @@ That is 4 screens instead of 13.
 
 ### Adding something in ten seconds
 
-Step one is always the same three things: **name, place, photo (optional)**.
+Step one is always the same two things: **name and place**.
 Save is available immediately. Everything else is optional and collapsed, and
 depends on the kind of thing.
 
@@ -115,7 +115,6 @@ depends on the kind of thing.
 | Other | everything else | — |
 
 New details worth adding, mostly for kept things:
-- **Photo.** Old blankets and cables are recognised by sight, not by name.
 - **Tags.** Free labels such as "winter", "wedding", "USB-C", "spare".
 - **Where it went.** Besides "finished", a kept thing can be lent (to whom),
   given away, sold or lost. Lent items show on Home until returned.
@@ -137,20 +136,20 @@ Quantities stay coarse (2 packs, 1 jar). Expiry is optional.
 
 Keep Instrument: paper/backlit, hairlines, mono figures, colour only for
 urgency. Change the emphasis: this is a finder, not a control panel. The home
-screen is a search box, not a dial and four readouts. Photos become the main
-visual on kept things. Mockups come first, before any build.
+screen is a search box, not a dial and four readouts. Mockups come first,
+before any build.
 
-## 6. Decisions for you
+## 6. Decisions (made 2026-11-14)
 
-| | Question | My recommendation |
+| | Question | Decision |
 |---|---|---|
-| A | Recipes and meal plans: remove, or keep? | Remove. If you do want recipes, they deserve their own small app that does not depend on pantry accuracy |
-| B | Fix-it: remove, keep as a small list on Home, or move to Nudge? | Remove. The catch: Nudge is yours alone, while Fix-it is shared with the household. If sharing matters, keep it as a short section on Home |
-| C | Receipt scanning: do you actually use it? | Remove unless you do. It carries an on-device AI model that is heavy for what it gives |
-| D | Reminders: push notifications, email, or both? | Push only, and only for expiries and warranties |
-| E | Photos: add them? | Yes. It needs file storage switched on in Supabase, which is a small setup step for you |
-| F | Plants and Luggage as their own kinds? | Drop both; "Other" plus tags covers them |
-| G | Does anyone else in the house use Trove? | If not, sharing stays but gets no further work |
+| A | Recipes and meal plans | **Remove** |
+| B | Fix-it | **Keep as a small list** — a section on Home, not its own screen |
+| C | Receipt scanning | **Remove** (takes the on-device AI model with it) |
+| D | Reminders | **Push only.** The daily email digest goes |
+| E | Photos | **Not needed** — kept things rely on name, tags and place |
+| F | Plants and Luggage | **No own kinds** — "Other" plus tags |
+| G | Other users | **Nobody else uses Trove.** Sharing stays in the data model but the household switcher and invite UI leave the main screens (moved into Settings) |
 
 ## 7. Safety
 
@@ -171,7 +170,7 @@ visual on kept things. Mockups come first, before any build.
 | 1 | Remove: subscriptions, books, plans, trends, nutrition, and whatever A–C decide. Remove the Kitchen/Home switch | A much smaller app that still works |
 | 2 | New structure: Home, Stuff, Places, Shopping | Four screens |
 | 3 | New Add flow; one-tap "bought" on Shopping; manual "running low" | Adding takes seconds |
-| 4 | Kept-thing details: photos, tags, lent/given/sold, last seen, kinds | The durable half becomes the strong half |
+| 4 | Kept-thing details: tags, lent/given/sold, last seen, kinds | The durable half becomes the strong half |
 | 5 | Reminders trimmed to one channel; final look pass; tidy unused code | Finished |
 
 Each phase leaves the app usable and is pushed on its own. Phase 1 alone
